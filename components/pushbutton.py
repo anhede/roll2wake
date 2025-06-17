@@ -5,6 +5,7 @@ from machine import Pin
 class PushButton:
     """
     A class to handle a momentary pushbutton with minimum click interval.
+    Assumes active low logic, i.e. wired to ground when pressed.
     """
 
     def __init__(self, pin: int, min_click_ms=100):
