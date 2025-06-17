@@ -31,6 +31,23 @@ class LCD:
         self.send_command(0x01)  # Clear Screen
         self.bus.writeto(self.addr, bytearray([0x08]))
 
+    def disableBacklight(self):
+        """
+        Disable the backlight of the LCD.
+        This is done by writing 0000001000 to the LCD address.
+                                       D
+        """
+        self.bus.writeto(self.addr, bytearray([0b0000000000]))
+
+
+    def enableBacklight(self):
+        """
+        Enable the backlight of the LCD.
+        This is done by writing 0000001100 to the LCD address.
+                                       D
+        """
+        self.bus.writeto(self.addr, bytearray([0b0000001100]))
+
     def scanAddress(self, addr):
         devices = self.bus.scan()
         if len(devices) == 0:
@@ -143,7 +160,12 @@ if __name__ == "__main__":
     # Display the second message on the LCD
     string = "Hello\n  World!"
     lcd.message(string)
-    # Wait for 5 seconds
-    time.sleep(5)
-    # Clear the display before exiting
-    lcd.clear()
+    time.sleep(2)
+    
+    # Toggle the backlight on and off
+    while True:
+        # Clear the display before exiting
+        lcd.disableBacklight()  # Turn off the backlight
+        time.sleep(2)  # Wait for a second before re-enabling backlight
+        lcd.enableBacklight()  # Turn on the backlight again
+        time.sleep(2)
