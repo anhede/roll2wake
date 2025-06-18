@@ -2,7 +2,7 @@ from machine import Pin
 import neopixel
 
 
-class NeoPixelCircle:
+class NeopixelCircle:
     """
     A class to control an 8-LED NeoPixel RGB module.
     """
@@ -67,7 +67,7 @@ if __name__ == "__main__":
     from math import sin, pi
 
     # Example usage on GP0 with 8 LEDs
-    strip = NeoPixelCircle(pin=16, brightness=0.1)
+    strip = NeopixelCircle(pin=16, brightness=0.1)
 
     # rainbow chase
     colors = [

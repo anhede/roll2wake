@@ -54,7 +54,7 @@ class PushButton:
 
 if __name__ == "__main__":
     hangtime_ms = 100  # milliseconds
-    button = PushButton(0, min_click_ms=hangtime_ms)
+    button = PushButton(15, min_click_ms=hangtime_ms)
     led = Pin("LED", Pin.OUT)
     led.off()
 

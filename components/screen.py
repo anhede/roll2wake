@@ -1,4 +1,5 @@
 import time
+from machine import I2C, Pin
 from components.lcd1602 import LCD
 
 class Screen:
@@ -37,8 +38,6 @@ class Screen:
             self.lcd.disableBacklight()
 
 if __name__ == "__main__":
-    from machine import I2C, Pin
-
     # Example usage of the Screen class
     # SDA Pin 20, SCL Pin 21, frequency 400kHz
     screen = Screen(20, 21)
