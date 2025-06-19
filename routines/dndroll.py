@@ -130,11 +130,11 @@ def __show_final_roll(
     # Update the screen with the result
     if success:
         if great_success:
-            screen_message = f"Great Success!\nRolled: {final_roll} on {difficulty}"
+            screen_message = f"Great Success!\nRolled {final_roll} on {difficulty}"
         else:
-            screen_message = f"Success!\nRolled: {final_roll} on {difficulty}"
+            screen_message = f"Success!\nRolled {final_roll} on {difficulty}"
     else:
-        screen_message = f"Failure!\nRolled: {final_roll} on {difficulty}"
+        screen_message = f"Failure!\nRolled {final_roll} on {difficulty}"
     screen.message(screen_message, center=True)
 
     # Neopixel colors based on the result
