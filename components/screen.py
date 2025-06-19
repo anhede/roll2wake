@@ -1,25 +1,42 @@
 import time
 from machine import I2C, Pin
 from components.lcd1602 import LCD
+from components.utils import smart_wrap
 
 class Screen:
     """
     A high-level class to handle an LCD1602 display using I2C communication.
     """
 
-    def __init__(self, pin_sda: int, pin_scl: int, freq_ghz=0.4):
+    def __init__(self, pin_sda: int, pin_scl: int, freq_ghz=0.4, rows=2, cols=16):
         freq = int(freq_ghz * 1e6)  # Convert MHz to Hz
         i2c = I2C(0, sda=Pin(pin_sda), scl=Pin(pin_scl), freq=freq)
         self.lcd = LCD(i2c)
+        self.rows = rows
+        self.cols = cols
 
-    def message(self, string, clear = True):
+    def message(self, string: str, clear=True, center=False, autosplit=True):
         """
         Display a message on the LCD.
         The string can contain '\n' for new lines.
         """
         if clear:
             self.lcd.clear()
-        self.lcd.message(string)
+
+        # Format the string for display
+        if "\n" in string:  # Manual line breaks
+            lines = string.split("\n")
+            if center:
+                # Center each line
+                lines = [line.center(self.cols) for line in lines]
+            formatted_string = "\n".join(lines)
+
+        elif autosplit:  # Auto split long strings
+            formatted_string = smart_wrap(
+                string, row_len=self.cols, max_rows=self.rows, center=center
+            )
+
+        self.lcd.message(formatted_string)
 
     def clear(self):
         """
@@ -37,6 +54,7 @@ class Screen:
         else:
             self.lcd.disableBacklight()
 
+
 if __name__ == "__main__":
     # Example usage of the Screen class
     # SDA Pin 20, SCL Pin 21, frequency 400kHz
@@ -52,10 +70,15 @@ if __name__ == "__main__":
     screen.message("Hello World!")
     time.sleep(2)  # Wait for 2 seconds
 
+    # Test centering and autosplitting
+    screen.message(
+        "This message is too long to fit on one line.", center=True, autosplit=True
+    )
+    time.sleep(2)  # Wait for 2 seconds
+
     start = time.ticks_ms()
     while True:
         # Display time since start
         current_time = time.ticks_ms() - start
-        screen.message(f"Time: {current_time } ms\n"
-                        f"Since start")
+        screen.message(f"Time: {current_time} ms\nSince start")
         time.sleep_ms(250)

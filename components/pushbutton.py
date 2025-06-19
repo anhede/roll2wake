@@ -41,6 +41,18 @@ class PushButton:
             return True
         return False
     
+    def is_held(self):
+        """
+        Returns True if the button is currently pressed (active low).
+        This is a more advanced check that allows for continuous press detection.
+        """
+        if self.__raw_is_pressed():
+            self._last_held = True
+            return True
+        else:
+            self._last_held = False
+            return False
+    
     def __raw_is_pressed(self):
         """
         Returns True if the button is currently pressed (active low).
