@@ -35,32 +35,32 @@ def choice_menu(
     while not pushb.is_pressed():
 
         # Get current choice
-        choice = get_choice(pot, pot_steps, n_prompts)
+        choice = __get_choice(pot, pot_steps, n_prompts)
 
         # If new choice this iteration
         if choice != last_choice:
             last_choice = choice
-            update_screen(screen, prompts, choice)
-            update_neopixel(neopix, prompts, choice)
+            __update_screen(screen, prompts, choice)
+            __update_neopixel(neopix, prompts, choice)
 
         time.sleep_ms(50)
 
     return choice  # Return the index of the selected choice
 
-def get_choice(pot: Potentiometer, pot_steps: int, n_prompts: int) -> int:
+def __get_choice(pot: Potentiometer, pot_steps: int, n_prompts: int) -> int:
     """
     Get the current choice based on the potentiometer position.
     Returns an index from 0 to n_prompts - 1.
     """
     return pot.read_discrete(pot_steps) % n_prompts  # Ensure it wraps around correctly
 
-def update_screen(screen: Screen, prompts: list[str], choice: int):
+def __update_screen(screen: Screen, prompts: list[str], choice: int):
     """
     Update the screen with the current choice.
     """
     screen.message(f"{choice+1}/{len(prompts)}: {prompts[choice]}")
 
-def update_neopixel(neopix: NeopixelCircle, prompts: list[str], choice: int):
+def __update_neopixel(neopix: NeopixelCircle, prompts: list[str], choice: int):
     """
     Update the NeoPixel circle with the current choice.
     """
