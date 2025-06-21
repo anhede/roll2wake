@@ -89,22 +89,22 @@ class StoryBeat:
         return self.ending is not None
     
     @classmethod
-    def from_new_story_dict(cls, data: dict) -> 'StoryBeat':
-        """Create a StoryBeat from a new story response dictionary"""
-        choices = [Choice.from_dict(choice_data) for choice_data in data.get('choices', [])]
+    def from_dict(cls, data: dict) -> 'StoryBeat':
+        """Create a StoryBeat from a dictionary (for JSON deserialization)"""
+        choices = [Choice.from_dict(choice_data) for choice_data in data['choices']]
+        ending = None
+        if data.get('ending'):
+            ending = StoryEnding(
+                ending_type=EndingType(data['ending']['type']),
+                ending_text=data['ending']['text'],
+                reason=data['ending']['reason']
+            )
+        
         return cls(
-            beat_text=data.get('story_intro', ''),
-            choices=choices
-        )
-    
-    @classmethod
-    def from_reaction_dict(cls, data: dict) -> 'StoryBeat':
-        """Create a StoryBeat from a reaction response dictionary"""
-        choices = [Choice.from_dict(choice_data) for choice_data in data.get('choices', [])]
-        return cls(
-            beat_text=data.get('story_beat', ''),
+            beat_text=data['story_beat'],
             choices=choices,
-            turns_remaining=data.get('turns_remaining')
+            turns_remaining=data.get('turns_remaining'),
+            ending=ending
         )
     
     def to_dict(self) -> dict:
@@ -122,6 +122,10 @@ class StoryBeat:
                 'reason': self.ending.reason
             }
         return result
+
+    def full_format(self) -> str:
+        """Return a full formatted string of the story beat"""
+        return f"{self.beat_text}\n\nChoices:\n{'\n'.join([repr(choice) for choice in self.choices])}"
     
     def __repr__(self) -> str:
         ending_info = f", ending={self.ending}" if self.ending else ""

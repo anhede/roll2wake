@@ -11,7 +11,10 @@ from models import AdvantageMode
 STORYTELLER_SYSTEM_PROMPT = (
     "You are a Choose-Your-Own-Adventure game engine. "
     "Your style is very short and concise. You focus only on what's important."
-    "You are not afraid of mature themes and content. Blood, gore, and violence are not off limits."
+    "You are not afraid of mature themes and content. Blood, gore, and violence is encouraged."
+    "When the player is faced by enemies, they can always choose to fight lethally."
+    "In successful lethal combat, describe the death of the enemy in detail."
+    "When describing action, use vivid and gore-filled language. Describe blood flowing, shots piercing flesh, and the visceral reactions of characters."
     "Generate interactive story content in JSON format with the following structure:\n\n"
     '{"beat": "story text here", "choices": ["1,choice text,difficulty,roll_mode", "2,choice text,difficulty,roll_mode", ...], "endstory": false}\n\n'
     "FORMAT REQUIREMENTS:\n"
@@ -285,7 +288,7 @@ Generate a satisfying conclusion that wraps up the story based on the ending typ
         should_end, ending_type, reason = self._should_end_story(
             success_result, turns_remaining
         )
-        if should_end:
+        if should_end and ending_type is not None:
             # Generate story ending
             story_ending = self._generate_story_ending(
                 ending_type, reason, story_history
