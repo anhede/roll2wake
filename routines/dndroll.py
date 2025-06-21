@@ -11,17 +11,26 @@ BASE_FRICTION = 10
 COLOR_BLANK = (0, 0, 0)  # Black for blank state
 COLOR_FAIL = (0, 0, 255)  # Blue for failure
 COLOR_DICE = (255, 255, 255)  # White for dice
-COLOR_SUCCESS = (0, 255, 0)  # Green for success
+COLOR_SOLID_SUCCESS = (0, 255, 0)  # Green for success
+COLOR_CLOSE_CALL = (255, 255, 0)  # Yellow for close call
 COLOR_GREAT_SUCCESS = COLOR_BLANK  # Optionally show the 8th in a special color
 
+# -2 Disaster, -1 Failure, 0 Close Call, 1 Solid, 2 Triumph
+SuccessLevel = int
+DISASTER = 0
+FAILURE = 1
+CLOSE_CALL = 2
+SOLID_SUCCESS = 3
+TRIUMPH = 4
+SUCCESS_LEVELS = ["Disaster", "Failure", "Close Call", "Solid Success", "Triumph"]
 
 def dnd_roll(
-    difficulty: int,  # 1-8
+    difficulty: int,  # 2-8
     advantage: int,  # 0 for normal, 1 for advantage, -1 for disadvantage
     screen: Screen,
     pushb: PushButton,
     neopix: NeopixelCircle,
-):
+) -> SuccessLevel:
     """
     Perform a D&D style roll with advantage or disadvantage.
     """
@@ -63,12 +72,24 @@ def dnd_roll(
     else:  # Normal roll
         final_roll = die_indices[0] + 1  # Convert index to die value
 
-    # Check if the roll is a success or great success
-    success = final_roll >= difficulty
-    great_success = final_roll == 8
+    # Determine success level based on the final roll
+    if final_roll == 1:
+        success_level = DISASTER
+    elif final_roll == 8:
+        success_level = TRIUMPH
+    elif final_roll == difficulty:
+        success_level = CLOSE_CALL
+    elif final_roll > difficulty:
+        success_level = SOLID_SUCCESS
+    elif final_roll < difficulty:
+        success_level = FAILURE
+    else:
+        raise ValueError("Unexpected roll value")
 
     # Display the result on the screen
-    __show_final_roll(screen, neopix, success, great_success, final_roll, difficulty)
+    __show_final_roll(screen, neopix, success_level, final_roll, difficulty)
+
+    return success_level
 
 
 def __prompt_roll(screen: Screen, difficulty: int, advantage: int):
@@ -119,8 +140,7 @@ def __color_die_roll(
 def __show_final_roll(
     screen: Screen,
     neopix: NeopixelCircle,
-    success: bool,
-    great_success: bool,
+    success_level: int,
     final_roll: int,
     difficulty: int,
 ):
@@ -128,39 +148,35 @@ def __show_final_roll(
     Show the final roll result on the screen and NeoPixel circle.
     """
     # Update the screen with the result
-    if success:
-        if great_success:
-            screen_message = f"Great Success!\nRolled {final_roll} on {difficulty}"
-        else:
-            screen_message = f"Success!\nRolled {final_roll} on {difficulty}"
-    else:
-        screen_message = f"Failure!\nRolled {final_roll} on {difficulty}"
+    screen_message = f"{SUCCESS_LEVELS[success_level]}!\nRolled {final_roll} on {difficulty}"
     screen.message(screen_message, center=True)
-
-    # Neopixel colors based on the result
-    if great_success:
-        colors = [COLOR_GREAT_SUCCESS] * 8
-    elif success:
-        colors = [COLOR_SUCCESS] * 8
-    else:
-        colors = [COLOR_FAIL] * 8
-
-    colors[final_roll - 1] = COLOR_DICE  # Highlight the rolled die # type: ignore
 
     # Flash the result
     total_time_ms = 3000
-    if great_success:
+    if success_level == TRIUMPH or success_level == DISASTER:
         # Rainbow cycle for great success
-        colors = [
-            (255, 0, 0),  # Red
-            (255, 127, 0),  # Orange
-            (255, 255, 0),  # Yellow
-            (0, 255, 0),  # Green
-            (0, 255, 255),  # Cyan
-            (0, 0, 255),  # Blue
-            (75, 0, 130),  # Indigo
-            (143, 0, 255),  # Violet
-        ]
+        if success_level == TRIUMPH:
+            colors = [
+                (255, 0, 0),  # Red
+                (255, 127, 0),  # Orange
+                (255, 255, 0),  # Yellow
+                (0, 255, 0),  # Green
+                (0, 255, 255),  # Cyan
+                (0, 0, 255),  # Blue
+                (75, 0, 130),  # Indigo
+                (143, 0, 255),  # Violet
+            ]
+        else: # Disaster, Red to black
+            colors = [
+                (255, 0, 0),  # Red
+                (128, 0, 0),  # Dark Red
+                (64, 0, 0),  # Very Dark Red
+                (32, 0, 0),  # Almost Black
+                (16, 0, 0),  # Near Black
+                (8, 0, 0),   # Very Near Black
+                (4, 0, 0),   # Almost Black
+                (2, 0, 0)    # Black
+            ]
         spin_time_ms = 50
         n_flashes = total_time_ms // spin_time_ms
         for i in range(n_flashes):
@@ -169,6 +185,15 @@ def __show_final_roll(
             neopix.set_colors(colors)
             time.sleep_ms(spin_time_ms)
     else:
+        # Neopixel colors based on the result
+        if success_level == SOLID_SUCCESS:
+            colors = [COLOR_SOLID_SUCCESS] * 8
+        elif success_level == CLOSE_CALL:
+            colors = [COLOR_CLOSE_CALL] * 8
+        else:
+            colors = [COLOR_FAIL] * 8
+
+        colors[final_roll - 1] = COLOR_DICE  # Highlight the rolled die # type: ignore
         # Flash the result on the screen and NeoPixel circle
         flash_time_ms = 500
         n_flashes = total_time_ms // flash_time_ms
