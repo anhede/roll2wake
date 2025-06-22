@@ -2,6 +2,7 @@ import requests
 import random
 import time
 from client import Client
+from models import MODE_ADVANTAGE, MODE_DISADVANTAGE, MODE_NORMAL
 
 
 def roll_dice() -> int:
@@ -30,13 +31,8 @@ def main():
         print("\n" + beat.full_format())
 
         # Check if this is an ending
-        if beat.ending:
-            ending_type = beat.ending.ending_type
-            ending_types = {1: "VICTORY", 2: "DEFEAT", 3: "NEUTRAL"}
-            ending_name = ending_types.get(ending_type, "UNKNOWN")
-            print(f"\n=== STORY ENDING: {ending_name} ===")
-            print(f"Reason: {beat.ending.reason}")
-            print("The story has concluded!")
+        if beat.is_ending:
+            print("\n=== STORY ENDING ===")
             break
 
         # Get user input
@@ -56,7 +52,11 @@ def main():
 
         # Roll dice and determine result
         roll = roll_dice()
-        print(f"You rolled a {roll} (DC {selected.difficulty})...")
+        if selected.mode == MODE_ADVANTAGE:
+            roll = max(roll, roll_dice())
+        elif selected.mode == MODE_DISADVANTAGE:
+            roll = min(roll, roll_dice())
+        print(f"You rolled a {roll} ({selected.difficulty})...")
 
         if roll == 8:
             result = "Critical Success."

@@ -8,14 +8,14 @@ app = Flask(__name__)
 api_key = os.getenv("API_KEY")
 if not api_key:
     raise ValueError("API_KEY environment variable is not set")
-storyteller = Storyteller(api_key=api_key)
+storyteller = Storyteller(api_key=api_key, model="gpt-4.1-mini")
 
 @app.route('/new', methods=['GET'])
 def get_new_story():
     """GET endpoint to start a new story"""
     try:
         story_beat = storyteller.generate_new_story()
-        
+        print(f"New story beat generated: {story_beat.to_dict()}")
         return jsonify({
             'success': True,
             'story_beat': story_beat.to_dict()
@@ -48,7 +48,7 @@ def update_story():
             }), 400
         
         story_beat = storyteller.continue_story(choice_id=choice_id, success_result=success_result)
-        
+        print(f"Story beat updated: {story_beat.to_dict()}")
         return jsonify({
             'success': True,
             'story_beat': story_beat.to_dict()

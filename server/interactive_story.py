@@ -1,6 +1,11 @@
 import os
 import random
 from storyteller import Storyteller
+from models import (
+    MODES_SYMBOLS,
+    MODE_ADVANTAGE,
+    MODE_DISADVANTAGE,
+)
 import time
 
 
@@ -13,19 +18,17 @@ def main():
     beat = storyteller.generate_new_story()
     while True:
         print("\n" + beat.beat_text)
-        
+
         # Check if this is an ending
-        if beat.is_ending and beat.ending is not None:
-            ending_type = beat.ending.ending_type.name
-            print(f"\n=== STORY ENDING: {ending_type} ===")
-            print(f"Reason: {beat.ending.reason}")
+        if beat.is_ending:
+            print("\n=== STORY ENDING ===")
             print("The story has concluded!")
             break
-        
+
         print("\nChoices:")
         for choice in beat.choices:
             print(
-                f"  {choice.choice_id}. {choice.label} (DC {choice.difficulty}, {choice.mode.name})"
+                f"  {choice.choice_id}. {choice.label} ({choice.difficulty}{MODES_SYMBOLS[choice.mode]})"
             )
         try:
             user_input = input(
@@ -40,15 +43,23 @@ def main():
             print("Invalid choice. Try again.")
             continue
         roll = roll_dice()
-        print(f"You rolled a {roll} (DC {selected.difficulty})...")
-        if roll >= selected.difficulty:
+        if selected.mode == MODE_ADVANTAGE:
+            roll = max(roll, roll_dice())
+        elif selected.mode == MODE_DISADVANTAGE:
+            roll = min(roll, roll_dice())
+        print(f"You rolled a {roll} ({selected.difficulty})...")
+        if roll == 8:
+            result = "Critical Success!"
+        elif roll == 1:
+            result = "Critical Failure!"
+        elif roll >= selected.difficulty:
             result = "Solid Success."
         else:
             result = "Failure."
         beat = storyteller.continue_story(choice_id=choice_id, success_result=result)
-        
+
         # Check if the story ended (no choices and not an explicit ending)
-        if not beat.choices and not beat.is_ending:
+        if beat.is_ending:
             print("\n" + beat.beat_text)
             print("No more choices. The story ends here!")
             break

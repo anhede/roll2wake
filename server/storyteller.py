@@ -1,11 +1,10 @@
 import os
 import json
-import random
 from openai import OpenAI
-from typing import List, Dict, Optional, Tuple
-from models import StoryBeat, Choice, StoryEnding, EndingType
+from typing import List, Optional, Tuple
+from models import StoryBeat, Choice
 from themes import get_random_themes
-from models import MODE_DISADVANTAGE, MODE_NORMAL, MODE_ADVANTAGE, ENDING_NEUTRAL, ENDING_VICTORY, ENDING_DEFEAT, ENDINGS, MODES
+from models import MODE_DISADVANTAGE, MODE_NORMAL, MODE_ADVANTAGE
 
 # System prompt for the Choose-Your-Own-Adventure game engine
 STORYTELLER_SYSTEM_PROMPT = (
@@ -15,6 +14,9 @@ STORYTELLER_SYSTEM_PROMPT = (
     "When the player is faced by enemies, they can always choose to fight lethally."
     "In successful lethal combat, describe the death of the enemy in detail."
     "When describing action, use vivid and gore-filled language. Describe blood flowing, shots piercing flesh, and the visceral reactions of characters."
+    "If the player fails an important task, or achieves a major victory, end the story with a satisfying conclusion."
+    "Such a conclusion should not be abrupt, but rather a natural end to the story arc."
+    "Always provide choices for any beat of the story, unless the story is ending.\n\n"
     "Generate interactive story content in JSON format with the following structure:\n\n"
     '{"beat": "story text here", "choices": ["1,choice text,difficulty,roll_mode", "2,choice text,difficulty,roll_mode", ...], "endstory": false}\n\n'
     "FORMAT REQUIREMENTS:\n"
@@ -79,95 +81,8 @@ class Storyteller:
         self.model = model
         self.themes = get_random_themes()
         self.story = Story()
-        self.consecutive_failures = 0
-        self.max_consecutive_failures = 3
 
-    def _should_end_story(
-        self, success_result: str, turns_remaining: Optional[int]
-    ) -> Tuple[bool, Optional[EndingType], str]:
-        """
-        Determine if the story should end and what type of ending.
-        Returns (should_end, ending_type, reason)
-        """
-        # Check if turns are exhausted
-        if turns_remaining is not None and turns_remaining <= 0:
-            return True, ENDING_NEUTRAL, "Story length limit reached"
-
-        # Check for victory conditions (multiple successes in a row)
-        if "Success" in success_result or "success" in success_result.lower():
-            self.consecutive_failures = 0
-            # Check if we have enough story beats for a satisfying victory
-            if len(self.story.story_beats) >= 5:
-                return (
-                    True,
-                    ENDING_VICTORY,
-                    "Player achieved their goal through successful choices",
-                )
-        else:
-            # Track consecutive failures
-            self.consecutive_failures += 1
-            if self.consecutive_failures >= self.max_consecutive_failures:
-                return (
-                    True,
-                    ENDING_DEFEAT,
-                    f"Player failed {self.consecutive_failures} consecutive important checks",
-                )
-
-        return False, None, ""
-
-    def _generate_story_ending(
-        self, ending_type: EndingType, reason: str, story_history: str
-    ) -> StoryBeat:
-        """Generate a story ending based on the ending type and context."""
-
-        ending_prompt = f"""Generate a story ending in JSON format with the following structure:
-{{"beat": "final story text", "endstory": true}}
-
-ENDING TYPE: {ENDINGS[ending_type]}
-REASON: {reason}
-
-STORY HISTORY:
-{story_history}
-
-Generate a satisfying conclusion that wraps up the story based on the ending type and reason. Set endstory to true and provide the final narrative in the beat field."""
-
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are a Choose-Your-Own-Adventure game engine. Generate story endings in JSON format.",
-                },
-                {
-                    "role": "user",
-                    "content": ending_prompt,
-                },
-            ],
-            response_format={"type": "json_object"},
-        )
-
-        content = response.choices[0].message.content
-        if content is None:
-            raise ValueError("No content received from OpenAI API")
-
-        data = json.loads(content)
-
-        # Create the ending
-        ending = StoryEnding(
-            ending_type=ending_type, ending_text=data.get("beat", ""), reason=reason
-        )
-
-        # Create story beat with ending
-        story_beat = StoryBeat(
-            beat_text=data.get("beat", ""),
-            choices=[],  # No choices for endings
-            turns_remaining=0,
-            ending=ending,
-        )
-
-        return story_beat
-
-    def generate_new_story(self, initial_turns: int = 8) -> StoryBeat:
+    def generate_new_story(self) -> StoryBeat:
         """Generate a new story beat with up to 8 choices."""
         themes_list = ", ".join(self.themes)
         response = self.client.chat.completions.create(
@@ -192,32 +107,6 @@ Generate a satisfying conclusion that wraps up the story based on the ending typ
 
         data = json.loads(content)
 
-        # Check if the AI wants to end the story
-        endstory = data.get("endstory", False)
-        if endstory:
-            # Create a story ending based on the AI's decision
-            ending_type = (
-                ENDING_NEUTRAL
-            )  # Default to neutral for AI-initiated endings
-            reason = "AI determined the story should end"
-
-            # Create the ending
-            ending = StoryEnding(
-                ending_type=ending_type, ending_text=data.get("beat", ""), reason=reason
-            )
-
-            # Create story beat with ending and no choices
-            story_beat = StoryBeat(
-                beat_text=data.get("beat", ""),
-                choices=[],  # No choices for endings
-                turns_remaining=0,
-                ending=ending,
-            )
-
-            # Add to story history
-            self.story.add_story_beat(story_beat)
-            return story_beat
-
         # Create choices from the response
         choices = []
         for choice_str in data.get("choices", []):
@@ -248,8 +137,7 @@ Generate a satisfying conclusion that wraps up the story based on the ending typ
         # Create and return the StoryBeat
         story_beat = StoryBeat(
             beat_text=data.get("beat", ""),
-            choices=choices,
-            turns_remaining=initial_turns,
+            choices=choices
         )
 
         # Add to story history
@@ -260,7 +148,7 @@ Generate a satisfying conclusion that wraps up the story based on the ending typ
     def continue_story(self, choice_id: int, success_result: str) -> StoryBeat:
         """Continue the story based on a player's choice and its outcome."""
         # Find the choice that was made
-        current_beat = self.story.story_beats[-1] if self.story.story_beats else None
+        current_beat = self.story.story_beats[-1]
         if not current_beat:
             raise ValueError("No story beat available to continue from")
 
@@ -279,108 +167,74 @@ Generate a satisfying conclusion that wraps up the story based on the ending typ
         # Get story history for context
         story_history = self.story.get_story_history()
 
-        # Calculate remaining turns
-        turns_remaining = (
-            current_beat.turns_remaining - 1 if current_beat.turns_remaining else None
-        )
-
-        # Check if the story should end
-        should_end, ending_type, reason = self._should_end_story(
-            success_result, turns_remaining
-        )
-        if should_end and ending_type is not None:
-            # Generate story ending
-            story_ending = self._generate_story_ending(
-                ending_type, reason, story_history
-            )
-            return story_ending
-
-        # Generate new story beat
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {
-                    "role": "system",
-                    "content": STORYTELLER_SYSTEM_PROMPT,
-                },
-                {
-                    "role": "user",
-                    "content": f"Story history:\n{story_history}\n\nPlayer chose: {chosen_choice.label}\nResult: {success_result}\n\nGenerate the next story beat and choices based on this outcome.",
-                },
-            ],
-            response_format={"type": "json_object"},
-        )
-
-        # Parse the response and create a StoryBeat
-        content = response.choices[0].message.content
-        if content is None:
-            raise ValueError("No content received from OpenAI API")
-
-        data = json.loads(content)
-
-        # Check if the AI wants to end the story
-        endstory = data.get("endstory", False)
-        if endstory:
-            # Determine ending type based on the success result
-            if "Success" in success_result or "success" in success_result.lower():
-                ending_type = ENDING_VICTORY
-                reason = "Player achieved a major victory"
-            else:
-                ending_type = ENDING_DEFEAT
-                reason = "Player suffered a critical failure"
-
-            # Create the ending
-            ending = StoryEnding(
-                ending_type=ending_type, ending_text=data.get("beat", ""), reason=reason
-            )
-
-            # Create story beat with ending and no choices
-            story_beat = StoryBeat(
-                beat_text=data.get("beat", ""),
-                choices=[],  # No choices for endings
-                turns_remaining=0,
-                ending=ending,
-            )
-
-            # Add to story history
-            self.story.add_story_beat(story_beat)
-            return story_beat
-
-        # Create choices from the response
-        choices = []
-        for choice_str in data.get("choices", []):
-            # Parse the choice string: "index,choice-text,difficulty,roll-mode"
-            parts = choice_str.split(",", 3)  # Split into max 4 parts
-            if len(parts) >= 4:
-                choice_id = int(parts[0])
-                label = parts[1]
-                difficulty = int(parts[2])
-                roll_mode = int(parts[3])
-
-                # Convert roll_mode to AdvantageMode enum
-                mode_map = {
-                    1: MODE_ADVANTAGE,
-                    -1: MODE_DISADVANTAGE,
-                    0: MODE_NORMAL,
-                }
-                mode = mode_map.get(roll_mode, MODE_NORMAL)
-
-                choice = Choice(
-                    choice_id=choice_id,
-                    label=label,
-                    difficulty=difficulty,
-                    mode=mode,
+        # Generate new story beat with retry logic
+        story_beat = None
+        max_attempts = 3
+        for attempt in range(1, max_attempts + 1):
+            try:
+                response = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=[
+                    {
+                        "role": "system",
+                        "content": STORYTELLER_SYSTEM_PROMPT,
+                    },
+                    {
+                        "role": "user",
+                        "content": f"Story history:\n{story_history}\n\nPlayer chose: {chosen_choice.label}\nResult: {success_result}\n\nGenerate the next story beat and choices based on this outcome.",
+                    },
+                    ],
+                    response_format={"type": "json_object"},
                 )
-                choices.append(choice)
 
-        # Create and return the StoryBeat
-        story_beat = StoryBeat(
-            beat_text=data.get("beat", ""),
-            choices=choices,
-            turns_remaining=turns_remaining,
-        )
+                # Parse the response and create a StoryBeat
+                content = response.choices[0].message.content
+                if content is None:
+                    raise ValueError("No content received from OpenAI API")
 
+                data = json.loads(content)
+
+                # Create choices from the response
+                choices = []
+                for choice_str in data.get("choices", []):
+                    # Parse the choice string: "index,choice-text,difficulty,roll-mode"
+                    parts = choice_str.split(",", 3)  # Split into max 4 parts
+                    choice_id = int(parts[0])
+                    label = parts[1]
+                    difficulty = int(parts[2])
+                    roll_mode = int(parts[3])
+
+                    # Convert roll_mode to AdvantageMode enum
+                    mode_map = {
+                        1: MODE_ADVANTAGE,
+                        -1: MODE_DISADVANTAGE,
+                        0: MODE_NORMAL,
+                    }
+                    mode = mode_map.get(roll_mode, MODE_NORMAL)
+
+                    choice = Choice(
+                        choice_id=choice_id,
+                        label=label,
+                        difficulty=difficulty,
+                        mode=mode,
+                    )
+                    choices.append(choice)
+
+                # Create and return the StoryBeat
+                story_beat = StoryBeat(
+                    beat_text=data.get("beat", ""),
+                    choices=choices,
+                    is_ending=data.get("endstory", False)
+                )
+                break  # Success, exit the retry loop
+            except Exception as e:
+                print(f"Attempt {attempt} failed: {e}")
+                if attempt == max_attempts:
+                    raise
+        
         # Add to story history
+        if not story_beat:
+            raise ValueError("Failed to generate a new story beat after multiple attempts")
         self.story.add_story_beat(story_beat)
 
         return story_beat
