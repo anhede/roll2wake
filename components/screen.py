@@ -24,6 +24,7 @@ class Screen:
             self.lcd.clear()
 
         # Format the string for display
+        formatted_string = string
         if "\n" in string:  # Manual line breaks
             lines = string.split("\n")
             if center:
@@ -54,6 +55,23 @@ class Screen:
         else:
             self.lcd.disableBacklight()
 
+    def set_cursor(self, on : bool):
+        """
+        Set the cursor visibility.
+        :param on: True to show the cursor, False to hide it.
+        """
+        if on:
+            self.lcd.enableCursor()
+        else:
+            self.lcd.disableCursor()
+
+    def set_cursor_position(self, row: int, col: int):
+        """
+        Set the cursor position on the LCD.
+        :param row: Row number (0 or 1).
+        :param col: Column number (0 to cols-1).
+        """
+        self.lcd.setCursor(row, col)
 
 if __name__ == "__main__":
     # Example usage of the Screen class

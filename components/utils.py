@@ -15,7 +15,7 @@ def smart_wrap(text: str, row_len: int, max_rows: int, center: bool = False) -> 
     for word in text.split():
         if len(word) > 12:
             for i in range(0, len(word), row_len):
-                tokens.append(word[i:i + row_len])
+                tokens.append(word[i : i + row_len])
         else:
             tokens.append(word)
 
@@ -42,7 +42,7 @@ def smart_wrap(text: str, row_len: int, max_rows: int, center: bool = False) -> 
             current = token[:row_len]
         else:
             if len(current) + 1 + len(token) <= row_len:
-                current += ' ' + token
+                current += " " + token
             else:
                 lines.append(current)
                 if len(lines) >= max_rows:
@@ -63,10 +63,11 @@ def smart_wrap(text: str, row_len: int, max_rows: int, center: bool = False) -> 
             pad_total = row_len - len(line)
             left_pad = pad_total // 2
             right_pad = pad_total - left_pad
-            centered_lines.append(' ' * left_pad + line + ' ' * right_pad)
+            centered_lines.append(" " * left_pad + line + " " * right_pad)
         lines = centered_lines
 
     return "\n".join(lines)
+
 
 # Example usage
 if __name__ == "__main__":

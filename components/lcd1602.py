@@ -48,6 +48,31 @@ class LCD:
         """
         self.bus.writeto(self.addr, bytearray([0b0000001100]))
 
+    def enableCursor(self):
+        """
+        Enable the blinking cursor on the LCD.
+        This is done by sending the command to show the cursor.
+        """
+        self.send_command(0x0F)  # Display ON, Cursor ON, Blink ON
+
+    def disableCursor(self):
+        """
+        Disable the blinking cursor on the LCD.
+        This is done by sending the command to hide the cursor.
+        """
+        self.send_command(0x0C)
+
+    def setCursor(self, row, col):
+        """
+        Set the cursor position on the LCD.
+        :param row: Row number (0 or 1).
+        :param col: Column number (0 to 15).
+        """
+        if row < 0 or row > 1 or col < 0 or col > 15:
+            raise ValueError("Row must be 0 or 1 and column must be between 0 and 15")
+        addr = 0x80 + (row * 0x40) + col
+        self.send_command(addr)
+
     def scanAddress(self, addr):
         devices = self.bus.scan()
         if len(devices) == 0:
@@ -161,6 +186,14 @@ if __name__ == "__main__":
     string = "Hello\n  World!"
     lcd.message(string)
     time.sleep(2)
+
+    # Test cursor visibility
+    lcd.enableCursor()  # Show the cursor
+    for y in range(2):
+        for x in range(16):
+            lcd.setCursor(y, x)
+            time.sleep(1)
+    lcd.disableCursor()  # Hide the cursor
     
     # Toggle the backlight on and off
     while True:
