@@ -5,7 +5,7 @@ from openai import OpenAI
 from typing import List, Dict, Optional, Tuple
 from models import StoryBeat, Choice, StoryEnding, EndingType
 from themes import get_random_themes
-from models import AdvantageMode
+from models import MODE_DISADVANTAGE, MODE_NORMAL, MODE_ADVANTAGE, ENDING_NEUTRAL, ENDING_VICTORY, ENDING_DEFEAT, ENDINGS, MODES
 
 # System prompt for the Choose-Your-Own-Adventure game engine
 STORYTELLER_SYSTEM_PROMPT = (
@@ -91,7 +91,7 @@ class Storyteller:
         """
         # Check if turns are exhausted
         if turns_remaining is not None and turns_remaining <= 0:
-            return True, EndingType.NEUTRAL, "Story length limit reached"
+            return True, ENDING_NEUTRAL, "Story length limit reached"
 
         # Check for victory conditions (multiple successes in a row)
         if "Success" in success_result or "success" in success_result.lower():
@@ -100,7 +100,7 @@ class Storyteller:
             if len(self.story.story_beats) >= 5:
                 return (
                     True,
-                    EndingType.VICTORY,
+                    ENDING_VICTORY,
                     "Player achieved their goal through successful choices",
                 )
         else:
@@ -109,7 +109,7 @@ class Storyteller:
             if self.consecutive_failures >= self.max_consecutive_failures:
                 return (
                     True,
-                    EndingType.DEFEAT,
+                    ENDING_DEFEAT,
                     f"Player failed {self.consecutive_failures} consecutive important checks",
                 )
 
@@ -123,7 +123,7 @@ class Storyteller:
         ending_prompt = f"""Generate a story ending in JSON format with the following structure:
 {{"beat": "final story text", "endstory": true}}
 
-ENDING TYPE: {ending_type.name}
+ENDING TYPE: {ENDINGS[ending_type]}
 REASON: {reason}
 
 STORY HISTORY:
@@ -197,7 +197,7 @@ Generate a satisfying conclusion that wraps up the story based on the ending typ
         if endstory:
             # Create a story ending based on the AI's decision
             ending_type = (
-                EndingType.NEUTRAL
+                ENDING_NEUTRAL
             )  # Default to neutral for AI-initiated endings
             reason = "AI determined the story should end"
 
@@ -231,11 +231,11 @@ Generate a satisfying conclusion that wraps up the story based on the ending typ
 
                 # Convert roll_mode to AdvantageMode enum
                 mode_map = {
-                    1: AdvantageMode.ADVANTAGE,
-                    -1: AdvantageMode.DISADVANTAGE,
-                    0: AdvantageMode.NORMAL,
+                    1: MODE_ADVANTAGE,
+                    -1: MODE_DISADVANTAGE,
+                    0: MODE_NORMAL,
                 }
-                mode = mode_map.get(roll_mode, AdvantageMode.NORMAL)
+                mode = mode_map.get(roll_mode, MODE_NORMAL)
 
                 choice = Choice(
                     choice_id=choice_id,
@@ -323,10 +323,10 @@ Generate a satisfying conclusion that wraps up the story based on the ending typ
         if endstory:
             # Determine ending type based on the success result
             if "Success" in success_result or "success" in success_result.lower():
-                ending_type = EndingType.VICTORY
+                ending_type = ENDING_VICTORY
                 reason = "Player achieved a major victory"
             else:
-                ending_type = EndingType.DEFEAT
+                ending_type = ENDING_DEFEAT
                 reason = "Player suffered a critical failure"
 
             # Create the ending
@@ -359,11 +359,11 @@ Generate a satisfying conclusion that wraps up the story based on the ending typ
 
                 # Convert roll_mode to AdvantageMode enum
                 mode_map = {
-                    1: AdvantageMode.ADVANTAGE,
-                    -1: AdvantageMode.DISADVANTAGE,
-                    0: AdvantageMode.NORMAL,
+                    1: MODE_ADVANTAGE,
+                    -1: MODE_DISADVANTAGE,
+                    0: MODE_NORMAL,
                 }
-                mode = mode_map.get(roll_mode, AdvantageMode.NORMAL)
+                mode = mode_map.get(roll_mode, MODE_NORMAL)
 
                 choice = Choice(
                     choice_id=choice_id,

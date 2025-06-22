@@ -1,20 +1,27 @@
-from typing import List, Optional
-from enum import IntEnum
+AdvantageMode = int
+MODE_DISADVANTAGE = -1
+MODE_NORMAL = 0
+MODE_ADVANTAGE = 1
+MODES = {
+    MODE_DISADVANTAGE: "disadvantage",
+    MODE_NORMAL: "normal",
+    MODE_ADVANTAGE: "advantage"
+}
+MODES_SYMBOLS = {
+    MODE_DISADVANTAGE: "-",
+    MODE_NORMAL: "",
+    MODE_ADVANTAGE: "+"
+}
 
-
-class AdvantageMode(IntEnum):
-    """Enum for advantage/disadvantage modes"""
-    DISADVANTAGE = -1
-    NORMAL = 0
-    ADVANTAGE = 1
-
-
-class EndingType(IntEnum):
-    """Enum for different types of story endings"""
-    VICTORY = 1
-    DEFEAT = 2
-    NEUTRAL = 3
-
+EndingType = int
+ENDING_VICTORY = 1
+ENDING_DEFEAT = 2
+ENDING_NEUTRAL = 3
+ENDINGS = {
+    ENDING_VICTORY: "victory",
+    ENDING_DEFEAT: "defeat",
+    ENDING_NEUTRAL: "neutral"
+}
 
 class StoryEnding:
     """Represents a story ending with type and narrative text"""
@@ -25,13 +32,13 @@ class StoryEnding:
         self.reason = reason
     
     def __repr__(self) -> str:
-        return f"StoryEnding(type={self.ending_type.name}, reason='{self.reason}')"
+        return f"StoryEnding(type={ENDINGS[self.ending_type]}, reason='{self.reason}')"
 
 
 class Choice:
     """Represents a choice in the story with its difficulty and advantage mode"""
     
-    def __init__(self, choice_id: int, label: str, difficulty: int, mode: AdvantageMode = AdvantageMode.NORMAL):
+    def __init__(self, choice_id: int, label: str, difficulty: int, mode: AdvantageMode = MODE_NORMAL):
         self.choice_id = choice_id
         self.label = label
         self.difficulty = difficulty
@@ -42,11 +49,11 @@ class Choice:
         """Create a Choice from a dictionary (for JSON deserialization)"""
         mode_str = data.get('mode', 'normal').lower()
         mode_map = {
-            'advantage': AdvantageMode.ADVANTAGE,
-            'disadvantage': AdvantageMode.DISADVANTAGE,
-            'normal': AdvantageMode.NORMAL
+            'advantage': MODE_ADVANTAGE,
+            'disadvantage': MODE_DISADVANTAGE,
+            'normal': MODE_NORMAL
         }
-        mode = mode_map.get(mode_str, AdvantageMode.NORMAL)
+        mode = mode_map.get(mode_str, MODE_NORMAL)
         
         return cls(
             choice_id=data['id'],
@@ -58,9 +65,9 @@ class Choice:
     def to_dict(self) -> dict:
         """Convert to dictionary (for JSON serialization)"""
         mode_str_map = {
-            AdvantageMode.ADVANTAGE: 'advantage',
-            AdvantageMode.DISADVANTAGE: 'disadvantage',
-            AdvantageMode.NORMAL: 'normal'
+            MODE_ADVANTAGE: 'advantage',
+            MODE_DISADVANTAGE: 'disadvantage',
+            MODE_NORMAL: 'normal'
         }
         
         return {
@@ -71,13 +78,13 @@ class Choice:
         }
     
     def __repr__(self) -> str:
-        return f"{self.choice_id}. {self.label} ({self.difficulty} {self.mode.name})"
+        return f"{self.choice_id}. {self.label} ({self.difficulty} {MODES[self.mode]})"
 
 
 class StoryBeat:
     """Represents a story beat with text and available choices"""
     
-    def __init__(self, beat_text: str, choices: List[Choice], turns_remaining: Optional[int] = None, ending: Optional[StoryEnding] = None):
+    def __init__(self, beat_text: str, choices: list[Choice], turns_remaining: int | None = None, ending: StoryEnding | None = None):
         self.beat_text = beat_text
         self.choices = choices
         self.turns_remaining = turns_remaining
@@ -95,7 +102,7 @@ class StoryBeat:
         ending = None
         if data.get('ending'):
             ending = StoryEnding(
-                ending_type=EndingType(data['ending']['type']),
+                ending_type=data['ending']['type'],
                 ending_text=data['ending']['text'],
                 reason=data['ending']['reason']
             )
@@ -117,7 +124,7 @@ class StoryBeat:
             result['turns_remaining'] = self.turns_remaining
         if self.ending is not None:
             result['ending'] = {
-                'type': self.ending.ending_type.value,
+                'type': self.ending.ending_type,
                 'text': self.ending.ending_text,
                 'reason': self.ending.reason
             }
