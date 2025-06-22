@@ -1,6 +1,6 @@
 {
     "python.languageServer": "Pylance",
-    "python.analysis.typeCheckingMode": "basic",
+    "python.analysis.typeCheckingMode": "standard",
     "python.analysis.diagnosticSeverityOverrides": {
         "reportMissingModuleSource": "none"
     },
@@ -13,5 +13,17 @@
         "~/.micropico-stubs/included"
     ],
     "micropico.syncFolder": "",
-    "micropico.syncFileTypes": ["py"],
+    "micropico.syncFileTypes": [
+        "py"
+    ],
+    "cursorpyright.analysis.diagnosticSeverityOverrides": {
+        "reportMissingModuleSource": "none"
+    },
+    "cursorpyright.analysis.extraPaths": [
+        "~/.micropico-stubs/included"
+    ],
+    "cursorpyright.analysis.typeCheckingMode": "basic",
+    "cursorpyright.analysis.typeshedPaths": [
+        "~/.micropico-stubs/included"
+    ],
 }
