@@ -30,7 +30,7 @@ def dnd_roll(
     screen: Screen,
     pushb: PushButton,
     neopix: NeopixelCircle,
-) -> SuccessLevel:
+) -> str:
     """
     Perform a D&D style roll with advantage or disadvantage.
     """
@@ -89,7 +89,7 @@ def dnd_roll(
     # Display the result on the screen
     __show_final_roll(screen, neopix, success_level, final_roll, difficulty)
 
-    return success_level
+    return SUCCESS_LEVELS[success_level]
 
 
 def __prompt_roll(screen: Screen, difficulty: int, advantage: int):
