@@ -2,7 +2,14 @@ import network
 import time
 
 class WifiClient:
-    def __init__(self, ssid: str, password: str, timeout: int = 60):
+    def __init__(self, timeout: int = 60):
+        try:
+            with open("/client/wifi_settings.txt") as f:
+                line = f.readline().strip()
+                ssid, password = line.split(",", 1)
+        except:
+            print("WiFi settings file invalid or not found. Please create /client/wifi-settings.txt with 'ssid,password'.")
+            return
         self.ssid = ssid
         self.password = password
         self.sta_if = network.WLAN(network.STA_IF)
@@ -25,7 +32,4 @@ class WifiClient:
             print("Failed to connect to WiFi")
 
 if __name__ == "__main__":
-    with open("wifi-settings.txt", "r") as f:
-        line = f.readline().strip()
-        ssid, password = line.split(",", 1)
-    client = WifiClient(ssid, password)
+    client = WifiClient()
