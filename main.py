@@ -104,66 +104,21 @@ def main():
     # State loop
     state = AlarmState()
     screen.set_cursor(True)
-    msg = ""
     sleep = False
     deep_sleep = False
     last_dist_was_close_ms = 0
     while True:
-        if not button.is_held():
-            choice = pot.read_discrete(6) % 3
-            state.choice(choice)
-
-        if state.choice() == 0:
-            if button.is_pressed():
-                state.is_on(not state.is_on())
-
-        elif state.choice() == 1:
-            if button.is_held():
-                hour = pot.read_discrete(24)
-                state.hour(hour)
-
-        elif state.choice() == 2:
-            if button.is_held():
-                minute = pot.read_discrete(60)
-                state.minute(minute)
+        update_alarm_state(pot, button, state)
 
         # Display updated settings
         if state.just_changed():
             sleep = False
             deep_sleep = False
-            screen.set_backlight(True)
-            msg_alarm = f"Alarm {' On' if state.is_on() else 'Off'}".center(screen.cols)
-            msg_time = f"Time: {state.hour():02}:{state.minute():02}".center(
-                screen.cols
-            )
-            msg = "\n".join([msg_alarm, msg_time])
-            screen.message(msg)
-
-            # Update cursor
-            row = 0
-            steps_back = 0
-            if state.choice() == 0:
-                row = 0
-                steps_back = 0
-            elif state.choice() == 1:
-                row = 1
-                steps_back = 3
-            elif state.choice() == 2:
-                row = 1
-                steps_back = 0
-            cursor_col = len(msg.split("\n")[row].rstrip()) - steps_back - 1
-            screen.set_cursor_position(row, cursor_col)
+            display_alarm_state(screen, state)
 
         if not sleep and state.ms_since_last_change() > SLEEP_MS:
             sleep = True
-            msg_time = time_string(include_seconds=False, prefix_day_of_week=True)
-            msg_alarm = (
-                f"Wake at {state.hour():02}:{state.minute():02}"
-                if state.is_on()
-                else ""
-            )
-            msg = "\n".join([msg_time, msg_alarm])
-            screen.message(msg, center=True)
+            display_sleep_state(screen, state)
 
         if (
             not deep_sleep
@@ -175,12 +130,63 @@ def main():
             screen.set_backlight(False)
 
         if distsensor.is_close():
-            print(f"close at {distsensor.distance_cm():.2f} cm")
             last_dist_was_close_ms = time.ticks_ms()
             screen.set_backlight(True)
             deep_sleep = False
 
         time.sleep_ms(50)
+
+
+def display_sleep_state(screen, state):
+    msg_time = time_string(include_seconds=False, prefix_day_of_week=True)
+    msg_alarm = (
+        f"Wake at {state.hour():02}:{state.minute():02}" if state.is_on() else ""
+    )
+    msg = "\n".join([msg_time, msg_alarm])
+    screen.message(msg, center=True)
+
+
+def display_alarm_state(screen, state):
+    screen.set_backlight(True)
+    msg_alarm = f"Alarm {' On' if state.is_on() else 'Off'}".center(screen.cols)
+    msg_time = f"Time: {state.hour():02}:{state.minute():02}".center(screen.cols)
+    msg = "\n".join([msg_alarm, msg_time])
+    screen.message(msg)
+
+    # Update cursor
+    row = 0
+    steps_back = 0
+    if state.choice() == 0:
+        row = 0
+        steps_back = 0
+    elif state.choice() == 1:
+        row = 1
+        steps_back = 3
+    elif state.choice() == 2:
+        row = 1
+        steps_back = 0
+    cursor_col = len(msg.split("\n")[row].rstrip()) - steps_back - 1
+    screen.set_cursor_position(row, cursor_col)
+
+
+def update_alarm_state(pot, button, state):
+    if not button.is_held():
+        choice = pot.read_discrete(6) % 3
+        state.choice(choice)
+
+    if state.choice() == 0:
+        if button.is_pressed():
+            state.is_on(not state.is_on())
+
+    elif state.choice() == 1:
+        if button.is_held():
+            hour = pot.read_discrete(24)
+            state.hour(hour)
+
+    elif state.choice() == 2:
+        if button.is_held():
+            minute = pot.read_discrete(60)
+            state.minute(minute)
 
 
 if __name__ == "__main__":
