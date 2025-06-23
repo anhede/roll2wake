@@ -16,11 +16,13 @@ STORYTELLER_SYSTEM_PROMPT = (
     "When describing action, use vivid and gore-filled language. Describe blood flowing, shots piercing flesh, and the visceral reactions of characters."
     "If the player fails an important task, or achieves a major victory, end the story with a satisfying conclusion."
     "Such a conclusion should not be abrupt, but rather a natural end to the story arc."
+    "If the player has items, include them in the story beat text."
+    "If the player is hurt, include their injuries in the story beat text.\n\n"
     "Always provide choices for any beat of the story, unless the story is ending.\n\n"
     "Generate interactive story content in JSON format with the following structure:\n\n"
     '{"beat": "story text here", "choices": ["1,choice text,difficulty,roll_mode", "2,choice text,difficulty,roll_mode", ...], "endstory": false}\n\n'
     "FORMAT REQUIREMENTS:\n"
-    "• beat: A single story paragraph with line breaks as literal '\\n' sequences\n"
+    "• beat: A single story paragraph, ends with the state of the player and any items they may possess if any\n"
     "• choices: Array of strings, each formatted as: 'index,choice_text,difficulty,roll_mode'\n"
     "  - index: number 1-5\n"
     "  - choice_text: descriptive action text\n"
@@ -77,6 +79,7 @@ class Storyteller:
     """
 
     def __init__(self, api_key: str, model: str = "gpt-4o-mini"):
+        print("Initializing Storyteller with model:", model)
         self.client = OpenAI(api_key=api_key)
         self.model = model
         self.themes = get_random_themes()
