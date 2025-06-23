@@ -1,6 +1,5 @@
 {
     "python.languageServer": "Pylance",
-    "python.analysis.reportProtocolConformance": "none",
     "python.analysis.typeCheckingMode": "standard",
     "python.analysis.diagnosticSeverityOverrides": {
         "reportMissingModuleSource": "none"
