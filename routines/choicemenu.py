@@ -3,6 +3,7 @@ from components.neopixelcircle import NeopixelCircle
 from components.screen import Screen
 from components.potentiometer import Potentiometer
 from components.pushbutton import PushButton
+from components.utils import smart_wrap
 
 # White for the selected choice
 COLOR_SELECTION = (255, 255, 255)
@@ -10,6 +11,8 @@ COLOR_SELECTION = (255, 255, 255)
 COLOR_UNSELECTED = (0, 0, 255)
 # No color for off state
 COLOR_OFF = (0, 0, 0) 
+# Time in milliseconds to wait before autoscrolling a line
+AUTOSCROLL_DELAY = 1000
 
 def choice_menu(
     prompts: list[str],
@@ -32,18 +35,30 @@ def choice_menu(
     # E.g. 4 -> 8, 3 -> 9
     pot_steps = round(8 / n_prompts) * n_prompts
 
-    last_choice = None
+    last_choice = 0
+    last_choice_time = time.ticks_ms()
+    last_prompt = None
     choice = 0
     while not pushb.is_pressed():
 
         # Get current choice
         choice = __get_choice(pot, pot_steps, n_prompts)
+        prompt = smart_wrap(prompts[choice], screen.cols, 50)
+        prompt = __update_autoscroll(screen, prompt, last_choice_time)
+        if not last_prompt:
+            last_prompt = prompt
 
         # If new choice this iteration
         if choice != last_choice:
             last_choice = choice
-            __update_screen(screen, prompts, choice)
+            last_choice_time = time.ticks_ms()
+            last_prompt = prompt
+            __update_screen(screen, prompt)
             __update_neopixel(neopix, prompts, choice)
+
+        if prompt != last_prompt:
+            last_prompt = prompt
+            __update_screen(screen, prompt)
 
         time.sleep_ms(50)
 
@@ -56,11 +71,11 @@ def __get_choice(pot: Potentiometer, pot_steps: int, n_prompts: int) -> int:
     """
     return pot.read_discrete(pot_steps) % n_prompts  # Ensure it wraps around correctly
 
-def __update_screen(screen: Screen, prompts: list[str], choice: int):
+def __update_screen(screen: Screen, prompt: str):
     """
     Update the screen with the current choice.
     """
-    screen.message(f"{prompts[choice]}")
+    screen.message(prompt)
 
 def __update_neopixel(neopix: NeopixelCircle, prompts: list[str], choice: int):
     """
@@ -79,6 +94,23 @@ def __update_neopixel(neopix: NeopixelCircle, prompts: list[str], choice: int):
     # Set the colors on the NeoPixel circle
     neopix.set_colors(colors)
 
+def __update_autoscroll(
+    screen: Screen,
+    prompt: str,
+    choice_time: int,
+) -> str:
+    """ 
+    Update the screen to scroll through the choice text if the choice hasn't changed for a while.
+    """
+    lines_to_scroll = max(0, len(prompt.split("\n")) - screen.rows)
+    if lines_to_scroll <= 0:
+        return prompt
+    current_line = (time.ticks_ms() - choice_time) // AUTOSCROLL_DELAY  # Scroll every second
+    current_line = current_line % (lines_to_scroll + 1)  # Wrap around
+    lines = prompt.split("\n")
+    selected_lines = lines[current_line:current_line + screen.rows]
+    return "\n".join(selected_lines)
+
 def __centered_list(n, center=2):
     half = n // 2
     if n % 2 == 0:
@@ -95,7 +127,7 @@ if __name__ == "__main__":
     pot = Potentiometer(28)
     pushb = PushButton(15)
 
-    prompts = ["Attack", "Run away", "Drink love\npotion", "Alt F4"]
+    prompts = ["Attack", "Run away", "Drink love potion", "Alt F4", "A very long choice that should wrap around to the next line. Probably more than 50 characters long and needs scrolling."]
     
     selected_index = choice_menu(prompts, neopix, screen, pot, pushb)
     screen.message(f"Selected: \n{prompts[selected_index]}")
