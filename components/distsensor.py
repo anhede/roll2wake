@@ -1,4 +1,5 @@
 from components.hcsr04 import HCSR04
+import time
 
 CLOSE_THRESHOLD_CM = 20  # Default threshold for close distance in centimeters
 
@@ -39,8 +40,6 @@ class Distsensor(HCSR04):
 
 
 if __name__ == "__main__":
-    import time
-
     # Example usage of the HCSR04 class
     sensor = Distsensor(trigger_pin=7, echo_pin=6)  # Adjust pins as needed
 
