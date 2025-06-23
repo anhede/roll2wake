@@ -38,6 +38,7 @@ class LCD:
                                        D
         """
         self.bus.writeto(self.addr, bytearray([0b0000000000]))
+        time.sleep(0.005)  # Wait for the backlight to turn off
 
 
     def enableBacklight(self):
@@ -47,6 +48,7 @@ class LCD:
                                        D
         """
         self.bus.writeto(self.addr, bytearray([0b0000001100]))
+        time.sleep(0.005)  # Wait for the backlight to turn on
 
     def enableCursor(self):
         """
