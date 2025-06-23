@@ -1,3 +1,5 @@
+from machine import RTC
+
 def smart_wrap(text: str, row_len: int, max_rows: int, center: bool = False) -> str:
     """
     Wraps the input text into lines no longer than row_len characters, up to max_rows lines.
@@ -113,6 +115,11 @@ def time_string(
     if prefix_day_of_week and dow:
         return f"{dow} {result}"
     return result
+
+def get_iso_timestamp():
+    rtc = RTC()
+    y, m, d, wd, hh, mm, ss, sub = rtc.datetime()
+    return "{:04d}-{:02d}-{:02d}T{:02d}:{:02d}:{:02d}Z".format(y,m,d,hh,mm,ss)
 
 
 # Example usage

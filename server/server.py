@@ -1,7 +1,8 @@
 from flask import Flask, request, jsonify
 import os
 from storyteller import Storyteller
-from models import StoryBeat
+from stats import Statistics
+from datetime import datetime
 
 app = Flask(__name__)
 
@@ -67,6 +68,29 @@ def health_check():
         'status': 'healthy',
         'service': 'storyteller-api'
     })
+
+def handle_statistic(stat: Statistics):
+    # Insert your business logic here. For example:
+    print(f"Got {stat.type} = {stat.value} at {stat.timestamp!r}")
+
+@app.route('/stats', methods=['POST'])
+def post_stats():
+    payload = request.get_json(force=True)
+    try:
+        stat = Statistics.from_dict(payload)
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+
+    # if you need a datetime object, do it here:
+    ts = stat.timestamp
+    if isinstance(ts, str):
+        try:
+            stat.timestamp = datetime.fromisoformat(ts)  # CPython 3.7+
+        except Exception:
+            pass  # leave it as string if parsing fails
+
+    handle_statistic(stat)
+    return jsonify({'status': 'ok'}), 201
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

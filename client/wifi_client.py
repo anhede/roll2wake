@@ -28,7 +28,7 @@ class WifiClient:
         while not self.sta_if.isconnected() and time.time() - start_time < self.timeout:
             attempts += 1
             print(f"Attempt {attempts} to connect to WiFi")
-            time.sleep(1)   
+            time.sleep_ms(1000)   
         if self.sta_if.isconnected():
             print("Connected to WiFi")
             print(self.sta_if.ifconfig())
