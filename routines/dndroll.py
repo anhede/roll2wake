@@ -43,6 +43,7 @@ def dnd_roll(
     for _ in range(n_rolls):
         die_indices.append(0)
         __color_die_roll(neopix, difficulty, die_indices)
+
         # Wait for the button press to start the roll
         while not pushb.is_held():
             time.sleep_ms(50)  # Polling delay

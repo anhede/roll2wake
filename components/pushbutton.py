@@ -13,7 +13,7 @@ class PushButton:
         self._pin = Pin(pin, Pin.IN, pull=Pin.PULL_UP)
         self._min_click_ms = min_click_ms
         self._last_click_time = time.ticks_ms() - min_click_ms  # allow immediate press
-        self._last_held = False
+        self._is_pressed_lock = False
 
     def is_pressed(self):
         """
@@ -22,10 +22,10 @@ class PushButton:
         now = time.ticks_ms()
 
         # check for release
-        if self._last_held:
+        if self._is_pressed_lock:
             if not self.__raw_is_pressed():
                 # button released
-                self._last_held = False
+                self._is_pressed_lock = False
             else:
                 # still held, no click
                 return False
@@ -37,7 +37,7 @@ class PushButton:
         # check for valid click
         if self.__raw_is_pressed():
             self._last_click_time = now
-            self._last_held = True
+            self._is_pressed_lock = True
             return True
         return False
     
@@ -47,10 +47,8 @@ class PushButton:
         This is a more advanced check that allows for continuous press detection.
         """
         if self.__raw_is_pressed():
-            self._last_held = True
             return True
         else:
-            self._last_held = False
             return False
     
     def __raw_is_pressed(self):
@@ -59,7 +57,6 @@ class PushButton:
         Dumb method that does no advanced checking.
         """
         if self._pin.value() == 0:
-            self._last_held = True
             return True
         return False
 
@@ -71,7 +68,7 @@ if __name__ == "__main__":
     led.off()
 
     while True:
-        if button.is_pressed():
-            led.toggle()
-            print("Button pressed! LED is now", "ON" if led.value() else "OFF")
-        time.sleep_ms(50)
+        is_pressed = button.is_pressed()
+        is_held = button.is_held()
+        print(f"pressed: {is_pressed}, held: {is_held}      ", end="\r")
+        time.sleep_ms(20)

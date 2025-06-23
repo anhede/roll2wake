@@ -1,12 +1,13 @@
+import time
 from components.neopixelcircle import NeopixelCircle
 from components.screen import Screen
 from components.potentiometer import Potentiometer
 from components.pushbutton import PushButton
 
-# Blue for the selected choice
-COLOR_SELECTION = (0, 0, 255)
-# Gray for unselected choices
-COLOR_UNSELECTED = (64, 0, 0)
+# White for the selected choice
+COLOR_SELECTION = (255, 255, 255)
+# Blue for unselected choices
+COLOR_UNSELECTED = (0, 0, 255)
 # No color for off state
 COLOR_OFF = (0, 0, 0) 
 
@@ -32,6 +33,7 @@ def choice_menu(
     pot_steps = round(8 / n_prompts) * n_prompts
 
     last_choice = None
+    choice = 0
     while not pushb.is_pressed():
 
         # Get current choice
@@ -58,7 +60,7 @@ def __update_screen(screen: Screen, prompts: list[str], choice: int):
     """
     Update the screen with the current choice.
     """
-    screen.message(f"{choice+1}/{len(prompts)}: {prompts[choice]}")
+    screen.message(f"{prompts[choice]}")
 
 def __update_neopixel(neopix: NeopixelCircle, prompts: list[str], choice: int):
     """

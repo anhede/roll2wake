@@ -24,7 +24,6 @@ def scroll_read(
     last_selected_line = -1
     while not pushb.is_pressed():
         selected_line = pot.read_discrete(len(lines))
-        print(f"Selected line: {selected_line}, Top line: {top_line}")
         # Adjust top line such that selected line is visible
         if top_line + screen.rows <= selected_line:
             top_line = selected_line - screen.rows + 1

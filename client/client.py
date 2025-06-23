@@ -16,6 +16,7 @@ class Client:
             return beat
         except Exception as e:
             print(f"Error: {e}")
+            print(data)
             raise e
 
     def update_story(self, choice_id: int, success_result: str) -> StoryBeat:
@@ -31,7 +32,7 @@ class Client:
             raise e
 
 if __name__ == "__main__":
-    wifi_client = WifiClient("Home", "mLp7K3wEF@")
+    wifi_client = WifiClient()
     client = Client("http://192.168.1.137:5000")
     beat = client.get_new_story()
     print(beat.full_format())

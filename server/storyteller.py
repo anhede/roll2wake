@@ -79,15 +79,15 @@ class Storyteller:
     """
 
     def __init__(self, api_key: str, model: str = "gpt-4o-mini"):
-        print("Initializing Storyteller with model:", model)
         self.client = OpenAI(api_key=api_key)
         self.model = model
-        self.themes = get_random_themes()
         self.story = Story()
+        print(f"Initializing Storyteller with model {self.model}")
 
     def generate_new_story(self) -> StoryBeat:
         """Generate a new story beat with up to 8 choices."""
-        themes_list = ", ".join(self.themes)
+        themes_list = " ".join(get_random_themes())
+        print(f"Generating new story with themes: {themes_list}")
         response = self.client.chat.completions.create(
             model=self.model,
             messages=[
