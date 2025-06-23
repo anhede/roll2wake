@@ -6,6 +6,13 @@ from models import StoryBeat, Choice
 from themes import get_random_themes
 from models import MODE_DISADVANTAGE, MODE_NORMAL, MODE_ADVANTAGE
 
+# Maximum number of attempts to get a valid response from OpenAI
+# This is to handle potential API errors or invalid responses
+# Happens sometimes due to bad model responses, 
+# a single failed attempt may happen in about 1 in 20 requests using gpt-4o-mini
+# Having six failed attempts in a row is thus extremely unlikely (1 in 64,200,000)
+MAX_ATTEMPTS = 6
+
 # System prompt for the Choose-Your-Own-Adventure game engine
 STORYTELLER_SYSTEM_PROMPT = (
     "You are a Choose-Your-Own-Adventure game engine. "
@@ -84,164 +91,85 @@ class Storyteller:
         self.story = Story()
         print(f"Initializing Storyteller with model {self.model}")
 
-    def generate_new_story(self) -> StoryBeat:
-        """Generate a new story beat with up to 8 choices."""
-        themes_list = " ".join(get_random_themes())
-        print(f"Generating new story with themes: {themes_list}")
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {
-                    "role": "system",
-                    "content": STORYTELLER_SYSTEM_PROMPT,
-                },
-                {
-                    "role": "user",
-                    "content": f"Themes: {themes_list}  \n\nGenerate a single beat and up to 8 choices following the format above.",
-                },
-            ],
-            response_format={"type": "json_object"},
-        )
-
-        # Parse the response and create a StoryBeat
-        content = response.choices[0].message.content
-        if content is None:
-            raise ValueError("No content received from OpenAI API")
-
-        data = json.loads(content)
-
-        # Create choices from the response
-        choices = []
-        for choice_str in data.get("choices", []):
-            # Parse the choice string: "index,choice-text,difficulty,roll-mode"
-            parts = choice_str.split(",", 3)  # Split into max 4 parts
-            if len(parts) >= 4:
-                choice_id = int(parts[0])
-                label = parts[1]
-                difficulty = int(parts[2])
-                roll_mode = int(parts[3])
-
-                # Convert roll_mode to AdvantageMode enum
-                mode_map = {
-                    1: MODE_ADVANTAGE,
-                    -1: MODE_DISADVANTAGE,
-                    0: MODE_NORMAL,
-                }
-                mode = mode_map.get(roll_mode, MODE_NORMAL)
-
-                choice = Choice(
-                    choice_id=choice_id,
-                    label=label,
-                    difficulty=difficulty,
-                    mode=mode,
-                )
-                choices.append(choice)
-
-        # Create and return the StoryBeat
-        story_beat = StoryBeat(
-            beat_text=data.get("beat", ""),
-            choices=choices
-        )
-
-        # Add to story history
-        self.story.add_story_beat(story_beat)
-
-        return story_beat
-
-    def continue_story(self, choice_id: int, success_result: str) -> StoryBeat:
-        """Continue the story based on a player's choice and its outcome."""
-        # Find the choice that was made
-        current_beat = self.story.story_beats[-1]
-        if not current_beat:
-            raise ValueError("No story beat available to continue from")
-
-        chosen_choice = None
-        for choice in current_beat.choices:
-            if choice.choice_id == choice_id:
-                chosen_choice = choice
-                break
-
-        if not chosen_choice:
-            raise ValueError(f"Choice with ID {choice_id} not found")
-
-        # Add the choice and result to story history
-        self.story.add_choice(chosen_choice, success_result)
-
-        # Get story history for context
-        story_history = self.story.get_story_history()
-
-        # Generate new story beat with retry logic
-        story_beat = None
-        max_attempts = 3
-        for attempt in range(1, max_attempts + 1):
+    def _request_story_beat(self, user_content: str) -> StoryBeat | None:
+        """
+        Send messages to OpenAI, parse JSON response, convert to StoryBeat, and record history.
+        """
+        for attempt in range(1, MAX_ATTEMPTS + 1):
             try:
                 response = self.client.chat.completions.create(
                     model=self.model,
                     messages=[
-                    {
-                        "role": "system",
-                        "content": STORYTELLER_SYSTEM_PROMPT,
-                    },
-                    {
-                        "role": "user",
-                        "content": f"Story history:\n{story_history}\n\nPlayer chose: {chosen_choice.label}\nResult: {success_result}\n\nGenerate the next story beat and choices based on this outcome.",
-                    },
+                        {"role": "system", "content": STORYTELLER_SYSTEM_PROMPT},
+                        {"role": "user", "content": user_content}
                     ],
                     response_format={"type": "json_object"},
                 )
-
-                # Parse the response and create a StoryBeat
                 content = response.choices[0].message.content
                 if content is None:
                     raise ValueError("No content received from OpenAI API")
 
                 data = json.loads(content)
 
-                # Create choices from the response
-                choices = []
+                # Parse choices
+                choices: List[Choice] = []
                 for choice_str in data.get("choices", []):
-                    # Parse the choice string: "index,choice-text,difficulty,roll-mode"
-                    parts = choice_str.split(",", 3)  # Split into max 4 parts
-                    choice_id = int(parts[0])
-                    label = parts[1]
-                    difficulty = int(parts[2])
-                    roll_mode = int(parts[3])
-
-                    # Convert roll_mode to AdvantageMode enum
-                    mode_map = {
-                        1: MODE_ADVANTAGE,
-                        -1: MODE_DISADVANTAGE,
-                        0: MODE_NORMAL,
-                    }
-                    mode = mode_map.get(roll_mode, MODE_NORMAL)
-
-                    choice = Choice(
-                        choice_id=choice_id,
-                        label=label,
-                        difficulty=difficulty,
-                        mode=mode,
+                    parts = choice_str.split(",", 3)
+                    if len(parts) < 4:
+                        continue
+                    cid, label, diff, mode = parts
+                    mode_map = {"1": MODE_ADVANTAGE, "-1": MODE_DISADVANTAGE, "0": MODE_NORMAL}
+                    choices.append(
+                        Choice(
+                            choice_id=int(cid),
+                            label=label,
+                            difficulty=int(diff),
+                            mode=mode_map.get(mode, MODE_NORMAL),
+                        )
                     )
-                    choices.append(choice)
 
-                # Create and return the StoryBeat
+                # Build beat
                 story_beat = StoryBeat(
                     beat_text=data.get("beat", ""),
                     choices=choices,
                     is_ending=data.get("endstory", False)
                 )
-                break  # Success, exit the retry loop
+
+                # Record
+                self.story.add_story_beat(story_beat)
+                return story_beat
+
             except Exception as e:
                 print(f"Attempt {attempt} failed: {e}")
-                if attempt == max_attempts:
+                if attempt == MAX_ATTEMPTS:
                     raise
-        
-        # Add to story history
-        if not story_beat:
-            raise ValueError("Failed to generate a new story beat after multiple attempts")
-        self.story.add_story_beat(story_beat)
 
-        return story_beat
+    def generate_new_story(self) -> StoryBeat:
+        """Generate a new story beat with up to 8 choices."""
+        themes = " ".join(get_random_themes())
+        print(f"Generating new story with themes: {themes}")
+        prompt = f"Themes: {themes}\n\nGenerate a single beat and up to 8 choices following the format above."
+        beat = self._request_story_beat(prompt)
+        if not beat:
+            raise ValueError("Failed to generate a new story beat")
+        return beat
 
+    def continue_story(self, choice_id: int, success_result: str) -> StoryBeat:
+        """Continue the story based on a player's choice and its outcome."""
+        current = self.story.story_beats[-1] if self.story.story_beats else None
+        if not current:
+            raise ValueError("No story beat available to continue from")
+        chosen = next((c for c in current.choices if c.choice_id == choice_id), None)
+        if not chosen:
+            raise ValueError(f"Choice with ID {choice_id} not found")
+
+        self.story.add_choice(chosen, success_result)
+        history = self.story.get_story_history()
+        prompt = f"Story history:\n{history}\nPlayer chose: {chosen.label}\nResult: {success_result}\n\nGenerate the next story beat and choices based on this outcome."
+        beat = self._request_story_beat(prompt)
+        if not beat:
+            raise ValueError("Failed to continue the story")
+        return beat
 
 if __name__ == "__main__":
     api_key = os.getenv("API_KEY")
