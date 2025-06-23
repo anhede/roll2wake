@@ -158,11 +158,20 @@ def main():
 
         # Check if it's time to wake up
         if should_wake_up(state):
-            print("Waking up!")
-            while not button.is_pressed():
-                time.sleep_ms(100)
+            sleep = False
+            deep_sleep = False
+            screen.set_backlight(True)
+            state.just_fired()
+            alarm(screen, button, buzzer)
+            try:
+                interactive_story(client, screen, pot, neopix, button)
+            except Exception as e:
+                print(f"Error in interactive story: {e}")
+                screen.message("Error occurred", center=True)
+                time.sleep(2)
+            screen.set_cursor(True)
 
-        print(f"Sleep: {sleep}, Deep Sleep: {deep_sleep}, Armed: {state.armed()}, Choice: {state.choice()}     ", end="\r")
+        #print(f"Sleep: {sleep}, Deep Sleep: {deep_sleep}, Armed: {state.armed()}, Choice: {state.choice()}     ", end="\r")
         time.sleep_ms(50)
 
 def should_wake_up(state: AlarmState) -> bool:
