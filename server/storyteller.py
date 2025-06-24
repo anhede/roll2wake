@@ -88,7 +88,6 @@ class Storyteller:
     def __init__(self, api_key: str, model: str = "gpt-4o-mini"):
         self.client = OpenAI(api_key=api_key)
         self.model = model
-        self.story = Story()
         print(f"Initializing Storyteller with model {self.model}")
 
     def _request_story_beat(self, user_content: str) -> StoryBeat | None:
@@ -147,6 +146,7 @@ class Storyteller:
     def generate_new_story(self) -> StoryBeat:
         """Generate a new story beat with up to 8 choices."""
         themes = " ".join(get_random_themes())
+        self.story = Story()
         print(f"Generating new story with themes: {themes}")
         prompt = f"Themes: {themes}\n\nGenerate a single beat and up to 8 choices following the format above."
         beat = self._request_story_beat(prompt)
@@ -156,6 +156,7 @@ class Storyteller:
 
     def continue_story(self, choice_id: int, success_result: str) -> StoryBeat:
         """Continue the story based on a player's choice and its outcome."""
+        print(f"Current Story Beats: {len(self.story.story_beats)}")
         current = self.story.story_beats[-1] if self.story.story_beats else None
         if not current:
             raise ValueError("No story beat available to continue from")
