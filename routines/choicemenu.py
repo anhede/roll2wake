@@ -36,7 +36,7 @@ def choice_menu(
     # E.g. 4 -> 8, 3 -> 9
     pot_steps = round(8 / n_prompts) * n_prompts
 
-    last_choice = 0
+    last_choice = -1
     last_choice_time = time.ticks_ms()
     last_prompt = None
     choice = 0
