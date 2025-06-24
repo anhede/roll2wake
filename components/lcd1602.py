@@ -70,8 +70,6 @@ class LCD:
         :param row: Row number (0 or 1).
         :param col: Column number (0 to 15).
         """
-        if row < 0 or row > 1 or col < 0 or col > 15:
-            raise ValueError("Row must be 0 or 1 and column must be between 0 and 15")
         addr = 0x80 + (row * 0x40) + col
         self.send_command(addr)
 
@@ -158,22 +156,41 @@ class LCD:
             self.send_data(ord(chr))
 
     def message(self, text):
-        # print("message: %s"%text)
-        for char in text:
-            if char == "\n":
-                self.send_command(0xC0)  # next line
-            else:
-                self.send_data(ord(char))
+        # DDRAM start addresses for a 20×4 display
+        line_addresses = [0x00, 0x40, 0x14, 0x54]
+
+        # Break up the text into lines
+        lines = text.split("\n")
+
+        # For each line, move the cursor to its start and write characters
+        for row, line in enumerate(lines):
+            if row >= len(line_addresses):
+                break  # ignore anything past 4 lines—or wrap, if you prefer
+
+            # send_command = 0x80 OR’d with the DDRAM address
+            self.send_command(0x80 | line_addresses[row])
+
+            for ch in line:
+                self.send_data(ord(ch))
 
 if __name__ == "__main__":
     from machine import I2C, Pin
+    from components.pins import PIN_SCREEN_SDA, PIN_SCREEN_SCL
 
     # Initialize I2C communication;
     # Set SDA to pin 20, SCL to pin 21, and frequency to 400kHz
-    i2c = I2C(0, sda=Pin(20), scl=Pin(21), freq=400000)
+    i2c = I2C(0, sda=Pin(PIN_SCREEN_SDA), scl=Pin(PIN_SCREEN_SCL), freq=400000)
 
     # Create an LCD object for interfacing with the LCD1602 display
     lcd = LCD(i2c)
+
+    #
+    rows = 4
+    msg = '\n'.join([f"Line {i+1}:" for i in range(rows)])
+    lcd.message(msg)
+    time.sleep(2)  # Wait for 2 seconds
+    lcd.clear()  # Clear the display
+
 
     # Display the first message on the LCD
     # Use '\n' to create a new line.

@@ -62,8 +62,10 @@ class PushButton:
 
 
 if __name__ == "__main__":
+    from components.pins import PIN_BUTTON
+
     hangtime_ms = 100  # milliseconds
-    button = PushButton(15, min_click_ms=hangtime_ms)
+    button = PushButton(PIN_BUTTON, min_click_ms=hangtime_ms)
     led = Pin("LED", Pin.OUT)
     led.off()
 

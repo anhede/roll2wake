@@ -48,7 +48,9 @@ class Potentiometer:
         return self._last_bin
 
 if __name__ == "__main__":
-    pot = Potentiometer(28)
+    from components.pins import PIN_POT
+
+    pot = Potentiometer(PIN_POT)
     led = Pin("LED", Pin.OUT)
     led.on()
 

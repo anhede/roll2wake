@@ -8,7 +8,7 @@ class Screen:
     A high-level class to handle an LCD1602 display using I2C communication.
     """
 
-    def __init__(self, pin_sda: int, pin_scl: int, freq_ghz=0.4, rows=2, cols=16):
+    def __init__(self, pin_sda: int, pin_scl: int, freq_ghz=0.4, rows=4, cols=20):
         freq = int(freq_ghz * 1e6)  # Convert MHz to Hz
         i2c = I2C(0, sda=Pin(pin_sda), scl=Pin(pin_scl), freq=freq)
         self.lcd = LCD(i2c)
@@ -74,9 +74,21 @@ class Screen:
         self.lcd.setCursor(row, col)
 
 if __name__ == "__main__":
+    from components.pins import PIN_SCREEN_SDA, PIN_SCREEN_SCL
     # Example usage of the Screen class
     # SDA Pin 20, SCL Pin 21, frequency 400kHz
-    screen = Screen(20, 21)
+    screen = Screen(PIN_SCREEN_SDA, PIN_SCREEN_SCL)
+
+    # Test all lines
+    msg = '\n'.join([f"Line {i+1}:" for i in range(screen.rows)])
+    screen.message(msg)
+    time.sleep(2)  # Wait for 2 seconds
+
+    # Test centering and autosplitting
+    screen.message(
+        "This message is too long to fit on one line.", center=True, autosplit=True
+    )
+    time.sleep(2)  # Wait for 2 seconds
 
     screen.message("Goodbye World!")
     time.sleep(2)  # Wait for 2 seconds
@@ -88,11 +100,6 @@ if __name__ == "__main__":
     screen.message("Hello World!")
     time.sleep(2)  # Wait for 2 seconds
 
-    # Test centering and autosplitting
-    screen.message(
-        "This message is too long to fit on one line.", center=True, autosplit=True
-    )
-    time.sleep(2)  # Wait for 2 seconds
 
     start = time.ticks_ms()
     while True:

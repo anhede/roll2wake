@@ -65,9 +65,10 @@ class NeopixelCircle:
 if __name__ == "__main__":
     import time
     from math import sin, pi
+    from components.pins import PIN_NEOPIXEL
 
     # Example usage on GP0 with 8 LEDs
-    strip = NeopixelCircle(pin=16, brightness=0.1)
+    strip = NeopixelCircle(pin=PIN_NEOPIXEL, brightness=0.1)
 
     # rainbow chase
     colors = [
