@@ -66,11 +66,19 @@ class LCD:
 
     def setCursor(self, row, col):
         """
-        Set the cursor position on the LCD.
-        :param row: Row number (0 or 1).
-        :param col: Column number (0 to 15).
+        Set the cursor position on a 20x4 LCD.
+        :param row: Row number (0-3).
+        :param col: Column number (0-19).
         """
-        addr = 0x80 + (row * 0x40) + col
+        # DDRAM start offsets for each line on a 20×4 display
+        row_offsets = [0x00, 0x40, 0x14, 0x54]
+
+        # Optionally clamp or raise if out of bounds:
+        if not (0 <= row < len(row_offsets)) or not (0 <= col < 20):
+            raise ValueError("Row must be 0-3 and col must be 0-19")
+
+        # 0x80 is the "set DDRAM address" command
+        addr = 0x80 + row_offsets[row] + col
         self.send_command(addr)
 
     def scanAddress(self, addr):
