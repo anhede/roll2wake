@@ -41,6 +41,7 @@ def update_story():
         
         choice_id = data.get('choice_id')
         success_result = data.get('success_result')
+        print(f"Received update request with choice_id: {choice_id}, success_result: {success_result}")
         
         if choice_id is None or success_result is None:
             return jsonify({
