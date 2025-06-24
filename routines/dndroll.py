@@ -24,6 +24,7 @@ SOLID_SUCCESS = 3
 TRIUMPH = 4
 SUCCESS_LEVELS = ["Disaster", "Failure", "Close Call", "Solid Success", "Triumph"]
 
+
 def dnd_roll(
     difficulty: int,  # 2-8
     advantage: int,  # 0 for normal, 1 for advantage, -1 for disadvantage
@@ -149,7 +150,9 @@ def __show_final_roll(
     Show the final roll result on the screen and NeoPixel circle.
     """
     # Update the screen with the result
-    screen_message = f"{SUCCESS_LEVELS[success_level]}!\nRolled {final_roll} on {difficulty}"
+    screen_message = (
+        f"{SUCCESS_LEVELS[success_level]}!\nRolled {final_roll} on {difficulty}"
+    )
     screen.message(screen_message, center=True)
 
     # Flash the result
@@ -167,16 +170,16 @@ def __show_final_roll(
                 (75, 0, 130),  # Indigo
                 (143, 0, 255),  # Violet
             ]
-        else: # Disaster, Red to black
+        else:  # Disaster, Red to black
             colors = [
                 (255, 0, 0),  # Red
                 (128, 0, 0),  # Dark Red
                 (64, 0, 0),  # Very Dark Red
                 (32, 0, 0),  # Almost Black
                 (16, 0, 0),  # Near Black
-                (8, 0, 0),   # Very Near Black
-                (4, 0, 0),   # Almost Black
-                (2, 0, 0)    # Black
+                (8, 0, 0),  # Very Near Black
+                (4, 0, 0),  # Almost Black
+                (2, 0, 0),  # Black
             ]
         spin_time_ms = 50
         n_flashes = total_time_ms // spin_time_ms
@@ -210,12 +213,16 @@ def __show_final_roll(
 
 
 if __name__ == "__main__":
-    # Example usage of the dnd_roll function
-    screen = Screen(pin_sda=20, pin_scl=21)  # Adjust pins as needed
-    pushb = PushButton(pin=15)  # Adjust pin as needed
-    neopix = NeopixelCircle(
-        pin=16, brightness=0.1
-    )  # Adjust pin and brightness as needed
+    from components.pins import (
+        PIN_SCREEN_SDA,
+        PIN_SCREEN_SCL,
+        PIN_BUTTON,
+        PIN_NEOPIXEL,
+    )
+
+    screen = Screen(pin_sda=PIN_SCREEN_SDA, pin_scl=PIN_SCREEN_SCL)
+    pushb = PushButton(pin=PIN_BUTTON)
+    neopix = NeopixelCircle(pin=PIN_NEOPIXEL, brightness=0.1)
 
     while True:
         # Simulate a roll with random difficulty and advantage
