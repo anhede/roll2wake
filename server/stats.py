@@ -7,7 +7,7 @@ except ImportError:
     import json
 
 class Statistics:
-    def __init__(self, stat_type, value, timestamp):
+    def __init__(self, stat_type: str, value: float, timestamp: str):
         # stat_type: string name of the metric
         # value: numeric (we’ll coerce to float)
         # timestamp: ISO8601 string (or anything serializable)
