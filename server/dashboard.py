@@ -1,7 +1,7 @@
 from dash import Dash, dcc, html, Input, Output
 import plotly.express as px
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 from db import StatisticsDB
 
 class DashboardApp:
@@ -49,6 +49,8 @@ class DashboardApp:
             # Parse date inputs
             start = datetime.fromisoformat(start_date) if start_date else None
             end   = datetime.fromisoformat(end_date)   if end_date   else None
+            if end:
+                end = end + timedelta(days=1)  # Include the end date in the range
 
             # Query the database
             stats = self.db.query(stat_type=selected_type, start=start, end=end)
