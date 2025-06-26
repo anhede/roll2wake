@@ -6,6 +6,9 @@ try:
 except ImportError:
     import json
 
+STAT_INTERACTION = 'interaction' # Tracks any user interaction
+STAT_WAKEUP = 'wakeup' # Wakeup event / Time to wake up
+
 class Statistics:
     def __init__(self, stat_type: str, value: float, timestamp: str):
         # stat_type: string name of the metric

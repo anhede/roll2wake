@@ -3,6 +3,8 @@ import os
 from storyteller import Storyteller
 from stats import Statistics
 from datetime import datetime
+from db import StatisticsDB
+from dashboard import DashboardApp
 
 app = Flask(__name__)
 
@@ -10,6 +12,12 @@ api_key = os.getenv("API_KEY")
 if not api_key:
     raise ValueError("API_KEY environment variable is not set")
 storyteller = Storyteller(api_key=api_key, model="gpt-4.1-mini")
+
+# Initialize SQLite DB
+db = StatisticsDB("stats.db")
+# Mount the Dash dashboard
+dashboard = DashboardApp(server=app, db_path="stats.db", url_base_pathname='/dashboard/')
+
 
 @app.route('/new', methods=['GET'])
 def get_new_story():
@@ -71,8 +79,9 @@ def health_check():
     })
 
 def handle_statistic(stat: Statistics):
-    # Insert your business logic here. For example:
+    # Your existing business logic
     print(f"Got {stat.type} = {stat.value} at {stat.timestamp!r}")
+
 
 @app.route('/stats', methods=['POST'])
 def post_stats():
@@ -82,15 +91,19 @@ def post_stats():
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
 
-    # if you need a datetime object, do it here:
+    # Normalize timestamp
     ts = stat.timestamp
     if isinstance(ts, str):
         try:
-            stat.timestamp = datetime.fromisoformat(ts)  # CPython 3.7+
+            stat.timestamp = datetime.fromisoformat(ts)
         except Exception:
-            pass  # leave it as string if parsing fails
+            pass
 
+    # Business logic
     handle_statistic(stat)
+    # Persist to DB
+    db.insert(stat)
+
     return jsonify({'status': 'ok'}), 201
 
 if __name__ == '__main__':
