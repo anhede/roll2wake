@@ -45,9 +45,9 @@ class Buzzer:
 
 
 if __name__ == "__main__":
-    # Example usage
+    from components.pins import PIN_BUZZER
     tone_ms = 50
-    buzzer = Buzzer(14)
+    buzzer = Buzzer(PIN_BUZZER)
 
     try:
         while True:

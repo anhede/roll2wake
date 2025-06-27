@@ -116,8 +116,12 @@ def main():
     buzzer = Buzzer(14)
 
     # Initialize client
+    screen.message("Connecting to WiFi...", center=True)
     wifi_client = WifiClient()
+    screen.message("Connecting to server...", center=True)
     client = Client("http://192.168.1.234:5000")
+    screen.message("Connections established", center=True)
+    time.sleep(2)
 
     # State loop
     state = AlarmState()

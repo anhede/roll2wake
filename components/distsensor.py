@@ -40,8 +40,8 @@ class Distsensor(HCSR04):
 
 
 if __name__ == "__main__":
-    # Example usage of the HCSR04 class
-    sensor = Distsensor(trigger_pin=7, echo_pin=6)  # Adjust pins as needed
+    from components.pins import PIN_DIST_TRIG, PIN_DIST_ECHO
+    sensor = Distsensor(trigger_pin=PIN_DIST_TRIG, echo_pin=PIN_DIST_ECHO)  # Adjust pins as needed
 
     while True:
         distance_cm = sensor.distance_cm()
