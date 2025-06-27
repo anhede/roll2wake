@@ -15,29 +15,63 @@ class Screen:
         self.rows = rows
         self.cols = cols
 
-    def message(self, string: str, clear=True, center=False, autosplit=True):
+    def message(self, string, clear=True, center=False, autosplit=True):
         """
         Display a message on the LCD.
-        The string can contain '\n' for new lines.
+        - string can contain '\n'
+        - if center=True, text is centered both horizontally and vertically,
+        with any extra blank line at the bottom.
         """
         if clear:
             self.lcd.clear()
 
-        # Format the string for display
-        formatted_string = string
-        if "\n" in string:  # Manual line breaks
-            lines = string.split("\n")
-            if center:
-                # Center each line
-                lines = [line.center(self.cols) for line in lines]
-            formatted_string = "\n".join(lines)
+        # 1) Break into lines (manual '\n' or autosplit)
+        if '\n' in string:
+            lines = string.split('\n')
+        elif autosplit:
+            wrapped = smart_wrap(string, row_len=self.cols, max_rows=self.rows)
+            lines = wrapped.split('\n')
+        else:
+            lines = [string]
 
-        elif autosplit:  # Auto split long strings
-            formatted_string = smart_wrap(
-                string, row_len=self.cols, max_rows=self.rows, center=center
-            )
+        # Trim to max rows
+        if len(lines) > self.rows:
+            lines = lines[:self.rows]
 
-        self.lcd.message(formatted_string)
+        # Prepare an all-blank row
+        blank = ' ' * self.cols
+
+        if center:
+            # 2) Horizontal center each line
+            for i in range(len(lines)):
+                line = lines[i]
+                if len(line) < self.cols:
+                    pad_left = (self.cols - len(line)) // 2
+                    pad_right = self.cols - len(line) - pad_left
+                    lines[i] = (' ' * pad_left) + line + (' ' * pad_right)
+                else:
+                    lines[i] = line[:self.cols]
+
+            # 3) Vertical centering
+            top_pad = (self.rows - len(lines)) // 2
+            padded = [blank] * top_pad + lines
+            # fill bottom
+            while len(padded) < self.rows:
+                padded.append(blank)
+            lines = padded
+
+        else:
+            # Left-justify (fill or truncate)
+            for i in range(len(lines)):
+                line = lines[i]
+                if len(line) < self.cols:
+                    lines[i] = line + (' ' * (self.cols - len(line)))
+                else:
+                    lines[i] = line[:self.cols]
+
+        # 4) Send to LCD
+        # Most Micropython HD44780 drivers treat '\n' as "move to next line"
+        self.lcd.message('\n'.join(lines))
 
     def clear(self):
         """
@@ -87,6 +121,12 @@ if __name__ == "__main__":
     # Test centering and autosplitting
     screen.message(
         "This message is too long to fit on one line.", center=True, autosplit=True
+    )
+    time.sleep(2)  # Wait for 2 seconds
+
+    # Test vertical centering
+    screen.message(
+        "This message fits on two lines.", center=True, autosplit=True
     )
     time.sleep(2)  # Wait for 2 seconds
 
