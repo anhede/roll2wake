@@ -41,7 +41,15 @@ class WifiClient:
         Sync the Pico W RTC to Swedish local time (CET/CEST) via NTP.
         """
         # 1. Sync RTC to UTC
-        ntptime.settime()
+        for attempt in range(10):
+            try:
+                ntptime.settime()
+                break
+            except Exception as e:
+                print(f"Failed to sync time via NTP (attempt {attempt + 1}):", e)
+                time.sleep(1)
+        else:
+            raise RuntimeError("Failed to sync time via NTP after 10 attempts")
 
         # 2. Current UTC as seconds since epoch
         t = time.time()
