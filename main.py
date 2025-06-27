@@ -17,6 +17,7 @@ from routines.interactive_story import interactive_story
 DEEP_SLEEP_MS = 10000
 SLEEP_MS = 5000
 ALARM_STATE_CHANGE_FREEZE_MS = 2000  # Prevents the alarm from going off immediately after setting it
+QUICK_ALARM_TOGGLE_SCREEN_MS = 200  # Time to enable screen after quick alarm toggle
 
 
 class AlarmState:
@@ -68,6 +69,15 @@ class AlarmState:
 
         # Get
         return self.__is_on
+    
+    def silent_is_on(self, is_on: bool | None = None):
+        """
+        Set or get the alarm state without triggering a change.
+        """
+        if is_on is not None:
+            self.__is_on = is_on
+            return None
+        return self.__is_on
 
     def just_changed(self, just_changed: bool | None = None):
         # Set
@@ -106,22 +116,23 @@ def main():
     """
     Main function to initialize components and run the interactive story routine.
     """
-    # Initialize components
-    screen = Screen(20, 21)
-    pot = Potentiometer(28)
-    button = PushButton(15)
-    neopix = NeopixelCircle(16, brightness=0.1)
-    distsensor = Distsensor(trigger_pin=7, echo_pin=6)
+    time.sleep(3)  # Allow time for the system to stabilize
+    import components.pins as pins
+    screen = Screen(pins.PIN_SCREEN_SDA, pins.PIN_SCREEN_SCL)
+    pot = Potentiometer(pins.PIN_POT)
+    button = PushButton(pins.PIN_BUTTON)
+    neopix = NeopixelCircle(pins.PIN_NEOPIXEL, brightness=0.1)
+    distsensor = Distsensor(trigger_pin=pins.PIN_DIST_TRIG, echo_pin=pins.PIN_DIST_ECHO)
 
-    buzzer = Buzzer(14)
+    buzzer = Buzzer(pins.PIN_BUZZER)
 
     # Initialize client
     screen.message("Connecting to WiFi...", center=True)
     wifi_client = WifiClient()
     screen.message("Connecting to server...", center=True)
-    client = Client("http://192.168.1.234:5000")
+    client = Client("http://172.20.10.3:5000")
     screen.message("Connections established", center=True)
-    time.sleep(2)
+    time.sleep(1)
 
     # State loop
     state = AlarmState()
@@ -160,11 +171,43 @@ def main():
             screen.set_backlight(True)
             deep_sleep = False
 
+        if sleep and button.is_pressed():
+            # If the button is pressed while in sleep mode, 
+            # toggle the alarm state
+            start_time = time.ticks_ms()
+            press_duration = 0
+            while button.is_held() and press_duration < 1000:
+                # Wait for the button to be released
+                time.sleep_ms(50)
+                press_duration = time.ticks_diff(time.ticks_ms(), start_time)
+            if press_duration < 1000:
+                state.silent_is_on(not state.silent_is_on())
+                screen.set_backlight(True)
+                deep_sleep = False
+            else:
+                # Immediately start the interactive story if the button is held
+                sleep = False
+                deep_sleep = False
+                screen.set_backlight(True)
+                time_to_hold = int(3)
+                while button.is_held() and time_to_hold > 0:
+                    screen.message(f"Starting story in {time_to_hold}...", center=True)
+                    time.sleep(1)
+                    time_to_hold -= 1
+                if time_to_hold == 0:
+                    try:
+                        interactive_story(client, screen, pot, neopix, button)
+                    except Exception as e:
+                        print(f"Error in interactive story: {e}")
+                        screen.message("Error occurred", center=True)
+                        time.sleep(2)
+
         # Check if it's time to wake up
         if should_wake_up(state):
             sleep = False
             deep_sleep = False
             screen.set_backlight(True)
+            state.is_on(False)  # Turn off the alarm after firing
             state.just_fired()
             alarm(screen, button, buzzer)
             try:
@@ -194,7 +237,8 @@ def should_wake_up(state: AlarmState) -> bool:
         return True
     return False
 
-def display_sleep_state(screen, state, last_time_string):
+def display_sleep_state(screen: Screen, state, last_time_string):
+    screen.set_cursor(False)
     msg_time = time_string(include_seconds=False, prefix_day_of_week=True)
     msg_alarm = (
         f"Wake at {state.hour():02}:{state.minute():02}" if state.is_on() else ""
@@ -205,14 +249,16 @@ def display_sleep_state(screen, state, last_time_string):
     return msg
 
 
-def display_alarm_state(screen, state):
+def display_alarm_state(screen: Screen, state):
     screen.set_backlight(True)
+    screen.set_cursor(True)
     msg_alarm = f"Alarm {' On' if state.is_on() else 'Off'}".center(screen.cols)
     msg_time = f"Time: {state.hour():02}:{state.minute():02}".center(screen.cols)
     msg = "\n".join([msg_alarm, msg_time])
-    screen.message(msg)
+    screen.message(msg, center=True)
 
     # Update cursor
+    # two rows -> 0th line, four rows -> 1st line
     row = 0
     steps_back = 0
     if state.choice() == 0:
@@ -224,8 +270,9 @@ def display_alarm_state(screen, state):
     elif state.choice() == 2:
         row = 1
         steps_back = 0
+    centering_adjust = screen.rows // 2 - 1
     cursor_col = len(msg.split("\n")[row].rstrip()) - steps_back - 1
-    screen.set_cursor_position(row, cursor_col)
+    screen.set_cursor_position(row + centering_adjust, cursor_col)
 
 
 def update_alarm_state(pot, button, state, sleep):
