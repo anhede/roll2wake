@@ -72,12 +72,11 @@ def interactive_story(
 
 def message_wait_story(screen: Screen):
     screen.set_cursor(True)
-    message = "Generating"
-    message = message.center(screen.cols)
-    screen.message(message, center=False, autosplit=False)
+    message = "Generating".center(screen.cols)
+    screen.message(message, center=True, autosplit=False)
     # Set after last letter
     last_letter_index = len(message.rstrip())
-    screen.set_cursor_position(0, last_letter_index)
+    screen.set_cursor_position(screen.rows // 2 - 1, last_letter_index)
 
 
 if __name__ == "__main__":
