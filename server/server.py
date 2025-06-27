@@ -16,7 +16,7 @@ storyteller = Storyteller(api_key=api_key, model="gpt-4.1-mini")
 # Initialize SQLite DB
 db = StatisticsDB("stats.db")
 # Mount the Dash dashboard
-dashboard = DashboardApp(server=app, db_path="stats.db", url_base_pathname='/dashboard/')
+dashboard = DashboardApp(server=app, url_base_pathname='/dashboard/')
 
 
 @app.route('/new', methods=['GET'])

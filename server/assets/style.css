@@ -1,0 +1,53 @@
+/* assets/style.css */
+
+/* Padding around the whole dashboard; center with auto side margins */
+.dashboard-container {
+  padding: 20px;
+  max-width: 1200px;   /* or whatever maximum width you prefer */
+  margin: 0 auto;      /* centers it horizontally */
+}
+
+/* Header */
+.dashboard-header {
+  text-align: center;
+  margin-bottom: 80px;
+}
+
+/* Row containers */
+.row {
+  display: flex;
+  width: 100%;
+  margin-bottom: 0px;
+  align-items: center;
+}
+
+/* First row with top margin */
+
+.row:first-child {
+  margin-top: 40px;
+}
+
+/* Individual flex items */
+.flex-item {
+  flex: 1;
+  text-align: center;
+}
+
+/* Plot containers */
+.flex-plot {
+  flex: 2;
+}
+
+/* The big bold number */
+.metric-value {
+  font-size: 48px;
+  font-weight: bold;
+  margin: 0;
+}
+
+/* The label under each number */
+.metric-label {
+  margin-top: 5px;
+  font-size: 14px;
+  color: #666;
+}

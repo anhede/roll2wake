@@ -1,81 +1,67 @@
-from dash import Dash, dcc, html, Input, Output
+from dash import Dash, dcc, html
 import plotly.express as px
-import pandas as pd
-from datetime import datetime, timedelta
-from db import StatisticsDB
 
 class DashboardApp:
-    def __init__(self, server, db_path: str = "stats.db", url_base_pathname: str = '/dashboard/'):
-        self.db = StatisticsDB(db_path)
+    def __init__(self, server, url_base_pathname: str = '/dashboard/'):
         self.app = Dash(
             __name__,
             server=server,
             url_base_pathname=url_base_pathname
         )
-        # Use a dynamic layout to always fetch fresh data
-        self.app.layout = self.serve_layout
-        self._init_callbacks()
+        # Dash auto-loads assets/style.css
+        self.app.layout = self._build_layout()
 
-    def serve_layout(self):
-        all_stats = self.db.query()
-        unique_types = sorted({s.type for s in all_stats})
+    def _build_layout(self):
+        # Placeholder metric values for row 1
+        today_values = [123, 45, 67]
+        # Placeholder averages for rows 2 & 3
+        avg_values = [50, 60]
+
+        # Placeholder figures
+        fig1 = px.line(x=[1,2,3,4], y=[10,20,15,25], title='Metric Trend 1')
+        fig2 = px.line(x=[1,2,3,4], y=[5,15,10,20], title='Metric Trend 2')
 
         return html.Div([
-            html.H1("IoT Statistics Dashboard"),
-            dcc.Dropdown(
-                id='type-dropdown',
-                options=[{'label': t, 'value': t} for t in unique_types],
-                value=unique_types[0] if unique_types else None
+            # Title header
+            html.Div(
+                children=[
+                    html.H1("WakeUpBro Dashboard", className='dashboard-title'),
+                    html.P("Overview of sleep trends", className='dashboard-subtitle')
+                ],
+                className='dashboard-header',
             ),
-            dcc.DatePickerRange(
-                id='date-picker',
-                start_date=datetime.utcnow().date(), # type: ignore
-                end_date=datetime.utcnow().date() # type: ignore
+            # Row 1
+            html.Div(
+                children=[
+                    html.Div([
+                        html.H1(str(val), className='metric-value'),
+                        html.P("Today's value", className='metric-label')
+                    ], className='flex-item')
+                    for val in today_values
+                ],
+                className='row'
             ),
-            dcc.Graph(id='timeseries-graph'),
-        ])
 
-    def _init_callbacks(self):
-        @self.app.callback(
-            Output('timeseries-graph', 'figure'),
-            Input('type-dropdown', 'value'),
-            Input('date-picker', 'start_date'),
-            Input('date-picker', 'end_date'),
-        )
-        def update_graph(selected_type, start_date, end_date):
-            if not selected_type:
-                return {}
+            # Row 2
+            html.Div([
+                html.Div([
+                    html.H1(str(avg_values[0]), className='metric-value'),
+                    html.P("Average metric", className='metric-label')
+                ], className='flex-item'),
+                html.Div([
+                    dcc.Graph(figure=fig1)
+                ], className='flex-plot'),
+            ], className='row'),
 
-            # Parse date inputs
-            start = datetime.fromisoformat(start_date) if start_date else None
-            end   = datetime.fromisoformat(end_date)   if end_date   else None
-            if end:
-                end = end + timedelta(days=1)  # Include the end date in the range
+            # Row 3
+            html.Div([
+                html.Div([
+                    html.H1(str(avg_values[1]), className='metric-value'),
+                    html.P("Average metric", className='metric-label')
+                ], className='flex-item'),
+                html.Div([
+                    dcc.Graph(figure=fig2)
+                ], className='flex-plot'),
+            ], className='row'),
 
-            # Query the database
-            stats = self.db.query(stat_type=selected_type, start=start, end=end)
-            if not stats:
-                # No data for the chosen range
-                return {}
-
-            # Convert to pandas DataFrame
-            df = pd.DataFrame([
-                {
-                    'timestamp': datetime.fromisoformat(s.timestamp) if isinstance(s.timestamp, str) else s.timestamp,
-                    'value': s.value
-                }
-                for s in stats
-            ])
-
-            # Time-series figure
-            fig = px.line(
-                df,
-                x='timestamp',
-                y='value',
-                title=f"{selected_type} over time"
-            )
-            return fig
-
-    def run(self):
-        # External run is handled by Flask
-        pass
+        ], className='dashboard-container')
