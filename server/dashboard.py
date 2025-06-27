@@ -26,7 +26,22 @@ class DashboardApp:
             html.Div(
                 children=[
                     html.H1("WakeUpBro Dashboard", className='dashboard-title'),
-                    html.P("Overview of sleep trends", className='dashboard-subtitle')
+                    html.P("Overview of sleep trends for the last", className='dashboard-subtitle'),
+                    html.Div([
+                        dcc.Dropdown(
+                            id='preset-date-range',
+                            options=[
+                                {'label': '1 week',   'value': '1w'},
+                                {'label': '2 weeks', 'value': '2w'},
+                                {'label': '1 month', 'value': '1m'},
+                                {'label': '6 months','value': '6m'},
+                                {'label': '12 months','value':'12m'}
+                            ],
+                            value='1w',
+                            clearable=False,
+                            style={'width': '200px', 'margin': '0 auto'}
+                        )
+                    ], className='flex-item')
                 ],
                 className='dashboard-header',
             ),
@@ -41,6 +56,8 @@ class DashboardApp:
                 ],
                 className='row'
             ),
+
+            # Dropdown
 
             # Row 2
             html.Div([
