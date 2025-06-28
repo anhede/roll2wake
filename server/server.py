@@ -18,8 +18,9 @@ storyteller = Storyteller(llm)
 
 # Initialize SQLite DB
 db = StatisticsDB("stats.db")
+
 # Mount the Dash dashboard
-dashboard = DashboardApp(server=app, url_base_pathname='/dashboard/')
+dashboard = DashboardApp(server=app, db=db, url_base_pathname='/dashboard/')
 
 
 @app.route('/new', methods=['GET'])

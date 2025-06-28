@@ -1,16 +1,55 @@
-/* assets/style.css */
+/* Color Theme */
+
+/* Blue grays */
+/* :root {
+  --bg-color: #F5F1ED;
+  --mg-color: #DAD2BC;
+  --pop-color: #476C9B;
+  --primary-color: #252323;
+} */
+
+/* Blue tans */
+ /* :root {
+  --bg-color: #F5EFE7;
+  --mg-color: #D8C4B6;
+  --primary-color: #3E5879;
+  --pop-color: #213555;
+} */
+
+/* Dark purple */
+:root {
+  --bg-color: #1A1A1D;
+  --mg-color: #3B1C32;
+  --primary-color: #b285a5;
+  --pop-color: #e54695;
+}
+
+/* Change bg of all */
+body {
+  background-color: var(--bg-color);
+  color: var(--primary-color);
+  /* font-family: Arial, sans-serif; */
+}
 
 /* Padding around the whole dashboard; center with auto side margins */
 .dashboard-container {
   padding: 20px;
-  max-width: 1200px;   /* or whatever maximum width you prefer */
-  margin: 0 auto;      /* centers it horizontally */
+  max-width: 1200px; /* or whatever maximum width you prefer */
+  margin: 0 auto; /* centers it horizontally */
 }
 
 /* Header */
 .dashboard-header {
   text-align: center;
   margin-bottom: 80px;
+}
+
+/* Header title */
+.dashboard-title {
+  font-size: 36px;
+  font-weight: bold;
+  color: var(--pop-color);
+  margin: 0;
 }
 
 /* Row containers */
@@ -42,6 +81,7 @@
 .metric-value {
   font-size: 48px;
   font-weight: bold;
+  color: var(--pop-color);
   margin: 0;
 }
 
@@ -49,5 +89,15 @@
 .metric-label {
   margin-top: 5px;
   font-size: 14px;
-  color: #666;
+}
+
+/* Dropdown */
+#preset-date-range, #preset-date-range * {
+    outline: none !important;
+    color: var(--primary-color) !important;
+    background-color: var(--mg-color) !important;
+}
+#preset-date-range {
+    max-width: 300px; /* Limit the width of the dropdown */
+    margin: 0 auto; /* Center it */
 }
