@@ -5,6 +5,9 @@ from typing import List, Optional, Tuple
 from models import StoryBeat, Choice
 from themes import get_random_themes
 from models import MODE_DISADVANTAGE, MODE_NORMAL, MODE_ADVANTAGE
+from llm import LLM
+from prompts import STORYTELLER_SYSTEM_PROMPT
+from utils import get_api_keys
 
 # Maximum number of attempts to get a valid response from OpenAI
 # This is to handle potential API errors or invalid responses
@@ -12,47 +15,6 @@ from models import MODE_DISADVANTAGE, MODE_NORMAL, MODE_ADVANTAGE
 # a single failed attempt may happen in about 1 in 20 requests using gpt-4o-mini
 # Having six failed attempts in a row is thus extremely unlikely (1 in 64,200,000)
 MAX_ATTEMPTS = 6
-
-# System prompt for the Choose-Your-Own-Adventure game engine
-STORYTELLER_SYSTEM_PROMPT = (
-    "You are a Choose-Your-Own-Adventure game engine. "
-    "Your style is very short and concise. You focus only on what's important."
-    "You are not afraid of mature themes and content. Blood, gore, and violence is encouraged."
-    "When the player is faced by enemies, they can always choose to fight lethally."
-    "In successful lethal combat, describe the death of the enemy in detail."
-    "When describing action, use vivid and gore-filled language. Describe blood flowing, shots piercing flesh, and the visceral reactions of characters."
-    "If the player fails an important task, or achieves a major victory, end the story with a satisfying conclusion."
-    "Such a conclusion should not be abrupt, but rather a natural end to the story arc."
-    "If the player has items, include them in the story beat text."
-    "If the player is hurt, include their injuries in the story beat text.\n\n"
-    "Always provide choices for any beat of the story, unless the story is ending.\n\n"
-    "Generate interactive story content in JSON format with the following structure:\n\n"
-    '{"beat": "story text here", "choices": ["1,choice text,difficulty,roll_mode", "2,choice text,difficulty,roll_mode", ...], "endstory": false}\n\n'
-    "FORMAT REQUIREMENTS:\n"
-    "• beat: A single story paragraph, ends with the state of the player and any items they may possess if any\n"
-    "• choices: Array of strings, each formatted as: 'index,choice_text,difficulty,roll_mode'\n"
-    "  - index: number 1-5\n"
-    "  - choice_text: descriptive action text\n"
-    "  - difficulty: integer 2-8 (2=easy, 8=very hard)\n"
-    "  - roll_mode: -1 (disadvantage), 0 (normal), 1 (advantage)\n"
-    "• endstory: boolean - set to true when the player has failed or won at an important task and the story should end\n\n"
-    "EXAMPLE:\n"
-    '{"beat": "You stand at a crossroads in the dark forest.\\nThe path splits in three directions.", "choices": ["1,Take the left path,3,0", "2,Go right towards the light,5,1", "3,Stay and rest,2,-1"], "endstory": false}\n\n'
-    "ENDING RULES:\n"
-    "• Set endstory to true when the player has achieved a major victory or suffered a critical failure\n"
-    "• When endstory is true, provide a satisfying conclusion in the beat text\n"
-    "• When endstory is true, choices array should be empty or omitted\n"
-    "• Major victories: completing the main quest, defeating the final boss, achieving the primary goal\n"
-    "• Critical failures: dying, losing the main objective, being captured permanently\n\n"
-    "RULES:\n"
-    "• Output ONLY valid JSON\n"
-    "• Include 2-5 choices per beat (unless ending the story)\n"
-    "• Make choices reflect the themes and story context\n"
-    "• Make sure that the difficulty reflects the choice. \n"
-    "• Ensure all difficulty values are integers 2-8\n"
-    "• Ensure all roll_mode values are -1, 0, or 1"
-)
-
 
 class Story:
     def __init__(self):
@@ -85,10 +47,9 @@ class Storyteller:
     A class to generate and progress interactive DnD-style stories using OpenAI's Chat API.
     """
 
-    def __init__(self, api_key: str, model: str = "gpt-4o-mini"):
-        self.client = OpenAI(api_key=api_key)
-        self.model = model
-        print(f"Initializing Storyteller with model {self.model}")
+    def __init__(self, llm: LLM):
+        self.llm = llm
+        print(f"Initializing Storyteller with model {self.llm}")
 
     def _request_story_beat(self, user_content: str) -> StoryBeat | None:
         """
@@ -96,19 +57,8 @@ class Storyteller:
         """
         for attempt in range(1, MAX_ATTEMPTS + 1):
             try:
-                response = self.client.chat.completions.create(
-                    model=self.model,
-                    messages=[
-                        {"role": "system", "content": STORYTELLER_SYSTEM_PROMPT},
-                        {"role": "user", "content": user_content}
-                    ],
-                    response_format={"type": "json_object"},
-                )
-                content = response.choices[0].message.content
-                if content is None:
-                    raise ValueError("No content received from OpenAI API")
-
-                data = json.loads(content)
+                raw = self.llm.generate(STORYTELLER_SYSTEM_PROMPT, user_content)
+                data = json.loads(raw)
 
                 # Parse choices
                 choices: List[Choice] = []
@@ -173,10 +123,10 @@ class Storyteller:
         return beat
 
 if __name__ == "__main__":
-    api_key = os.getenv("API_KEY")
-    if not api_key:
-        raise ValueError("API_KEY is not set")
-    storyteller = Storyteller(api_key=api_key)
+    from llm import OpenAILLM
+    api_key_openai = get_api_keys().get("openai")
+    api_key_anthropic = get_api_keys().get("anthropic")
+    storyteller = Storyteller(OpenAILLM(api_key_openai)) # type: ignore
 
     # Generate initial story
     initial_beat = storyteller.generate_new_story()

@@ -5,13 +5,16 @@ from stats import Statistics
 from datetime import datetime
 from db import StatisticsDB
 from dashboard import DashboardApp
+from llm import OpenAILLM, ClaudeLLM
+from utils import get_api_keys
 
 app = Flask(__name__)
 
-api_key = os.getenv("API_KEY")
-if not api_key:
-    raise ValueError("API_KEY environment variable is not set")
-storyteller = Storyteller(api_key=api_key, model="gpt-4.1-mini")
+# Get API keys from environment variables
+api_keys = get_api_keys()
+#llm = OpenAILLM(api_key=openai_api_key, model="gpt-4o-mini")
+llm = ClaudeLLM(api_key=api_keys.get("anthropic"), model="claude-3-5-sonnet-20240620")
+storyteller = Storyteller(llm)
 
 # Initialize SQLite DB
 db = StatisticsDB("stats.db")
@@ -95,7 +98,7 @@ def post_stats():
     ts = stat.timestamp
     if isinstance(ts, str):
         try:
-            stat.timestamp = datetime.fromisoformat(ts)
+            stat.timestamp = datetime.fromisoformat(ts) # type: ignore
         except Exception:
             pass
 
