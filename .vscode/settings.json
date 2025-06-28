@@ -1,7 +1,11 @@
 {
     "python.languageServer": "Pylance",
-    "python.analysis.typeCheckingMode": "standard",
+    "python.analysis.typeCheckingMode": "off", // or "strict" if you want most checks
     "python.analysis.diagnosticSeverityOverrides": {
+        "reportOptionalMemberAccess": "none",
+        "reportOptionalSubscript": "none",
+        "reportReturnType": "none",
+        "reportGeneralTypeIssues": "none",
         "reportMissingModuleSource": "none"
     },
     "python.terminal.activateEnvironment": false,

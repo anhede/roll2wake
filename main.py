@@ -130,7 +130,7 @@ def main():
     screen.message("Connecting to WiFi...", center=True)
     wifi_client = WifiClient()
     screen.message("Connecting to server...", center=True)
-    client = Client("http://172.20.10.3:5000")
+    client = Client("http://192.168.1.234:5000")
     screen.message("Connections established", center=True)
     time.sleep(1)
 
