@@ -1,0 +1,84 @@
+from datetime import datetime, time, timedelta
+from bisect import bisect_left
+from typing import List, Dict
+
+from datetime import datetime, time, timedelta
+from bisect import bisect_left
+from collections import namedtuple
+from typing import List
+
+# define a simple record to hold each night’s data
+SleepRecord = namedtuple("SleepRecord", ["date", "bedtime", "wakeup", "duration"])
+
+def infer_sleep_periods(
+    interactions: List[datetime],
+    wakeups: List[datetime],
+    evening_start: time = time(18, 0)
+) -> List[SleepRecord]:
+    """
+    Returns a list of SleepRecord(date, bedtime, wakeup, duration).
+    Logic is:
+      1) Sort interactions & wakeups.
+      2) For each wakeup w on calendar‐date D:
+         a) grab all interactions < w
+         b) split into:
+            • prev_evening: on D-1 with t >= evening_start
+            • early_morning: on D
+         c) if prev_evening: bedtime = latest(prev_evening)
+            elif early_morning: bedtime = earliest(early_morning)
+            else: skip
+         d) duration = w - bedtime
+      3) return a list of SleepRecords, sorted by date.
+    """
+    interactions = sorted(interactions)
+    wakeups      = sorted(wakeups)
+    records = []
+
+    for w in wakeups:
+        idx = bisect_left(interactions, w)
+        preceding = interactions[:idx]
+        if not preceding:
+            continue
+
+        day       = w.date()
+        yesterday = day - timedelta(days=1)
+
+        prev_evening = [
+            t for t in preceding
+            if t.date() == yesterday and t.time() >= evening_start
+        ]
+        if prev_evening:
+            bedtime = max(prev_evening)
+        else:
+            early_morning = [t for t in preceding if t.date() == day]
+            if not early_morning:
+                continue
+            bedtime = min(early_morning)
+
+        duration = w - bedtime
+        records.append(SleepRecord(date=day,
+                                   bedtime=bedtime,
+                                   wakeup=w,
+                                   duration=duration))
+
+    return records
+
+
+
+if __name__ == "__main__":
+    from datetime import datetime
+
+    interactions = [
+        datetime(2025,6,24,22,0),
+        datetime(2025,6,25, 3,0),
+        datetime(2025,6,25,23,0),
+        datetime(2025,6,26, 2,0),
+    ]
+    wakeups = [
+        datetime(2025,6,25, 7,0),
+        datetime(2025,6,26, 7,30),
+    ]
+
+    periods = infer_sleep_periods(interactions, wakeups)
+    for rec in periods:
+        print(f"{rec.date}: went to bed at {rec.bedtime.time()}, woke at {rec.wakeup.time()}, slept {rec.duration}")

@@ -123,12 +123,17 @@ class DashboardApp:
         )
 
     def plot_sleep(self, preset: str):
+        """Create a sleep trend plot. Tracks time from latest interaction to wakeup."""
+        import plotly.graph_objects as go
+        import pandas as pd
+        from sleep_inference import infer_sleep_durations
+
         # Map your presets to days
         presets = {"1w": 7, "2w": 14, "1m": 30, "6m": 182, "12m": 365}
         days = presets.get(preset, 7)
 
         end_date = dt.datetime.now()
-        start_date = end_date - dt.timedelta(days=days)
+        start_date = end_date - dt.timedelta(days=days+1)
 
         interactions = self.db.query(STAT_INTERACTION, start=start_date, end=end_date)
         interaction_times = [
@@ -140,17 +145,41 @@ class DashboardApp:
             dt.datetime.fromisoformat(wakeup.timestamp) for wakeup in wakeups
         ]
 
-        # Infer sleep times
+        sleep_durations = infer_sleep_durations(interaction_times, wakeup_times)
+        days = sorted(sleep_durations.keys())
+        hours_slept = [
+            sd.total_seconds() / 3600.0
+            for sd in (sleep_durations[day] for day in days)
+        ]
+        
+        # create a parallel list of timedelta strings
+        td_strs = [str(sleep_durations[day]) for day in days]
 
-        print(f"Interaction times: {interaction_times}")
-        print(f"Wakeup times: {wakeup_times}")
-        fig = px.line(
-            x=[1, 2, 3, 4],  # replace with real data
-            y=[10, 20, 15, 25],
-            title=f"Sleep trend ({preset})",
-            color_discrete_sequence=[self.colors["pop"]],
+        bar = go.Bar(
+            x=days,
+            y=hours_slept,
+            # attach the formatted timedeltas
+            customdata=td_strs,
+            hovertemplate=
+                # you can show date & sleep:
+                "Slept: %{customdata}" +
+                "<extra></extra>",
+            marker=dict(
+                color=self.colors["pop"],
+                line=dict(width=0),
+                cornerradius=8,
+            ),
         )
+
+        fig = go.Figure(data=[bar])
+        fig.update_layout(
+            xaxis=dict(title="Day", type="date"),
+            title="Sleep Durations",
+            hovermode="x",
+        )
+
         fig = self.format_fig(fig)
+
         return fig
 
     def plot_example(self):
@@ -199,13 +228,19 @@ class DashboardApp:
             paper_bgcolor=self.colors["bg"],  # outer background
             plot_bgcolor=self.colors["bg"],  # inner plotting area
             font_color=self.colors["primary"],  # axis & title text
+            font_family="Fira Code, monospace",
+            title=dict(
+                x=0.5,  # Center the title
+                font=dict(size=24),
+            ),
             xaxis=dict(
                 showgrid=True,
                 gridcolor=self.colors["mg"],  # e.g. "#444444" or "lightgrey"
                 gridwidth=1,
                 zeroline=True,
                 zerolinecolor=self.colors["mg"],  # <-- Color of x=0 line
-                zerolinewidth=2                        # <-- Optional: thickness
+                zerolinewidth=2,                        # <-- Optional: thickness
+                title=dict(font=dict(size=22))
             ),
             yaxis=dict(
                 showgrid=True,
@@ -213,7 +248,8 @@ class DashboardApp:
                 gridwidth=1,
                 zeroline=True,
                 zerolinecolor=self.colors["mg"],  # <-- Color of x=0 line
-                zerolinewidth=2                        # <-- Optional: thickness
+                zerolinewidth=2,                        # <-- Optional: thickness
+                title=dict(font=dict(size=22))
             ),
         )
         return fig
