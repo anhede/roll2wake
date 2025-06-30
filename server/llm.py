@@ -2,6 +2,18 @@ from abc import ABC, abstractmethod
 from openai import OpenAI
 from prompts import STORYTELLER_SYSTEM_PROMPT
 import anthropic
+import ftfy
+import re
+
+def clean_with_ftfy(s: str) -> str:
+    """
+    Cleans the input string using ftfy to fix common text encoding issues,
+    and then encodes it to ASCII, ignoring non-ASCII characters.
+    """
+    fixed = ftfy.fix_text(s)
+    fixed = ftfy.fix_text(s)
+    cleaned = re.sub(r'[^\x20-\x7E]', ' ', fixed)
+    return cleaned
 
 
 class LLM(ABC):
@@ -30,7 +42,7 @@ class OpenAILLM(LLM):
         content = response.choices[0].message.content
         if content is None:
             raise ValueError("No content from OpenAI")
-        return content
+        return clean_with_ftfy(content)
     
     def __repr__(self):
         return f"OpenAI ({self.model})"
@@ -61,7 +73,7 @@ class ClaudeLLM(LLM):
         # Claude returns a list of content blocks, get the text from the first one
         content_block = response.content[0]
         if hasattr(content_block, "text"):
-            return content_block.text  # type: ignore
+            return clean_with_ftfy(content_block.text)  # type: ignore
         else:
             raise ValueError("Unexpected content format from Claude")
         
