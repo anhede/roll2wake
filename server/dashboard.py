@@ -5,6 +5,7 @@ from stats import STAT_INTERACTION, STAT_WAKEUP
 import re
 import datetime as dt
 from dash.dependencies import Input, Output
+from sleep_inference import infer_sleep_periods, SleepRecord
 
 
 class DashboardApp:
@@ -19,11 +20,111 @@ class DashboardApp:
 
     def _register_callbacks(self):
         @self.app.callback(
+            # Row 1 - Averages
+            Output("today-sleep", "children"),
+            Output("today-gotobed", "children"),
+            Output("today-wakeup", "children"),
+
+            # Row 2 - Sleep Graph
             Output("sleep-graph", "figure"),
+            Output("avg-sleep", "children"),
+
+            # Row 3 - Bedtime Graph
+            Output("bedtime-graph", "figure"),
+            Output("avg-bedtime", "children"),
+
+            # Row 4 - Wakeup Graph
+            Output("wakeup-graph", "figure"),
+            Output("avg-wakeup", "children"),
+
+            # Inputs
             Input("preset-date-range", "value"),
         )
-        def update_sleep_graph(preset_value):
-            return self.plot_sleep(preset_value)
+        def update_sleep_graph(preset):
+            # Map your presets to days
+            presets = {"1w": 7, "2w": 14, "1m": 30, "6m": 182, "12m": 365}
+            days = presets.get(preset, 7)
+            interaction_times, wakeup_times = self.get_times_from_db(days)
+            sleep_records = infer_sleep_periods(interaction_times, wakeup_times)
+            if not sleep_records:
+                return "-", "-", "-", self.plot_sleep([])
+
+            # Averages and today's values
+            today = dt.date.today()
+            today_record = next(
+                (record for record in sleep_records if record.date == today),
+                None
+            )
+            if today_record:
+                today_sleep = f"{today_record.duration.total_seconds() / 3600 :.1f}h"
+                today_gotobed = today_record.bedtime.strftime("%H:%M")
+                today_wakeup = today_record.wakeup.strftime("%H:%M")
+            else:
+                today_sleep = "-"
+                today_gotobed = "-"
+                today_wakeup = "-"
+
+            # Calculate averages
+            total_sleep = sum(
+                record.duration.total_seconds() for record in sleep_records
+            )
+            avg_sleep = total_sleep / len(sleep_records) / 3600 if sleep_records else 0
+            avg_sleep_str = f"{avg_sleep:.1f}h"
+
+            avg_bedtime = (
+                sum(record.bedtime.hour * 60 + record.bedtime.minute for record in sleep_records) /
+                len(sleep_records)
+            ) if sleep_records else 0
+            avg_bedtime_str = f"{int(avg_bedtime // 60):02}:{int(avg_bedtime % 60):02}"
+
+            avg_wakeup = (
+                sum(record.wakeup.hour * 60 + record.wakeup.minute for record in sleep_records) /
+                len(sleep_records)
+            ) if sleep_records else 0
+            avg_wakeup_str = f"{int(avg_wakeup // 60):02}:{int(avg_wakeup % 60):02}"
+
+            # Plots
+            if days <= 7:
+                show_date = False
+            else:
+                show_date = True
+            sleep_fig = self.plot_sleep(sleep_records, show_date)
+            bedtime_fig = self.plot_line_trend(
+                sleep_records, True, show_date
+            )
+            wakeup_fig = self.plot_line_trend(
+                sleep_records, False, show_date
+            )
+
+            return (
+                today_sleep,
+                today_gotobed,
+                today_wakeup,
+                sleep_fig,
+                avg_sleep_str,
+                bedtime_fig,
+                avg_bedtime_str,
+                wakeup_fig,
+                avg_wakeup_str,
+            )
+
+    def get_times_from_db(self, days):
+        
+
+        end_date = dt.datetime.now()
+        start_date = end_date - dt.timedelta(days=days + 1)
+
+        interactions = self.db.query(STAT_INTERACTION, start=start_date, end=end_date)
+        interaction_times = [
+            dt.datetime.fromisoformat(interaction.timestamp)
+            for interaction in interactions
+        ]
+        wakeups = self.db.query(STAT_WAKEUP, start=start_date, end=end_date)
+        wakeup_times = [
+            dt.datetime.fromisoformat(wakeup.timestamp) for wakeup in wakeups
+        ]
+
+        return interaction_times, wakeup_times
 
     def _extract_colors(self):
         with open("assets/style.css") as f:
@@ -78,92 +179,119 @@ class DashboardApp:
                 # Row 1
                 html.Div(
                     children=[
+                        html.H2("Today's stats", className="dashboard-section-title"),
                         html.Div(
-                            [
-                                html.H2(str(val), className="metric-value"),
-                                html.P("Today's value", className="metric-label"),
+                            children=[
+                                html.Div(
+                                    [
+                                        html.H2(
+                                            "-",
+                                            id=f"today-{stat_type}",
+                                            className="metric-value",
+                                        ),
+                                        html.P(metric_name, className="metric-label"),
+                                    ],
+                                    className="flex-item",
+                                )
+                                for stat_type, metric_name in zip(["sleep", "gotobed", "wakeup"], 
+                                                                   ["Sleep", "Bedtime", "Wakeup"])
                             ],
-                            className="flex-item",
+                            className="row",
                         )
-                        for val in today_values
                     ],
-                    className="row",
+                    className="row column"   # <-- notice the extra “column” here
                 ),
                 # Dropdown
-                # Row 2
+                # Row 2 – Sleep overview
                 html.Div(
-                    [
+                    className="dashboard-section",
+                    children=[
+                        html.H2("Sleep", className="dashboard-section-title"),
                         html.Div(
                             [
-                                html.H2(str(avg_values[0]), className="metric-value"),
-                                html.P("Average metric", className="metric-label"),
+                                html.Div(
+                                    [
+                                        html.H2("-", id='avg-sleep', className="metric-value"),
+                                        html.P("Average sleep", className="metric-label"),
+                                    ],
+                                    className="flex-item",
+                                ),
+                                html.Div([dcc.Graph(id="sleep-graph")], className="flex-plot"),
                             ],
-                            className="flex-item",
+                            className="row",
                         ),
-                        html.Div([dcc.Graph(id="sleep-graph")], className="flex-plot"),
                     ],
-                    className="row",
                 ),
-                # Row 3
+
+                # Row 3 – Bedtime
                 html.Div(
-                    [
+                    className="dashboard-section",
+                    children=[
+                        html.H2("Bedtime", className="dashboard-section-title"),
                         html.Div(
                             [
-                                html.H2(str(avg_values[1]), className="metric-value"),
-                                html.P("Average metric", className="metric-label"),
+                                html.Div(
+                                    [
+                                        html.H2("-", id='avg-bedtime', className="metric-value"),
+                                        html.P("Average bedtime", className="metric-label"),
+                                    ],
+                                    className="flex-item",
+                                ),
+                                html.Div([dcc.Graph(id='bedtime-graph')], className="flex-plot"),
                             ],
-                            className="flex-item",
+                            className="row",
                         ),
-                        html.Div([dcc.Graph(figure=fig2)], className="flex-plot"),
                     ],
-                    className="row",
                 ),
+
+                # Row 4 – Wakeup
+                html.Div(
+                    className="dashboard-section",
+                    children=[
+                        html.H2("Wakeup", className="dashboard-section-title"),
+                        html.Div(
+                            [
+                                html.Div(
+                                    [
+                                        html.H2("-", id='avg-wakeup', className="metric-value"),
+                                        html.P("Average wakeup", className="metric-label"),
+                                    ],
+                                    className="flex-item",
+                                ),
+                                html.Div([dcc.Graph(id='wakeup-graph')], className="flex-plot"),
+                            ],
+                            className="row",
+                        ),
+                    ],
+                ),
+
             ],
             className="dashboard-container",
         )
 
-    def plot_sleep(self, preset: str):
+    def plot_sleep(self, sleep_records: list[SleepRecord], show_date: bool):
         """Create a sleep trend plot. Tracks time from latest interaction to wakeup."""
         import plotly.graph_objects as go
-        import pandas as pd
-        from sleep_inference import infer_sleep_durations
 
-        # Map your presets to days
-        presets = {"1w": 7, "2w": 14, "1m": 30, "6m": 182, "12m": 365}
-        days = presets.get(preset, 7)
-
-        end_date = dt.datetime.now()
-        start_date = end_date - dt.timedelta(days=days+1)
-
-        interactions = self.db.query(STAT_INTERACTION, start=start_date, end=end_date)
-        interaction_times = [
-            dt.datetime.fromisoformat(interaction.timestamp)
-            for interaction in interactions
-        ]
-        wakeups = self.db.query(STAT_WAKEUP, start=start_date, end=end_date)
-        wakeup_times = [
-            dt.datetime.fromisoformat(wakeup.timestamp) for wakeup in wakeups
-        ]
-
-        sleep_durations = infer_sleep_durations(interaction_times, wakeup_times)
-        days = sorted(sleep_durations.keys())
+        days = [sleep_record.date for sleep_record in sleep_records]
         hours_slept = [
-            sd.total_seconds() / 3600.0
-            for sd in (sleep_durations[day] for day in days)
+            sleep_record.duration.total_seconds() / 3600
+            for sleep_record in sleep_records
         ]
-        
+
         # create a parallel list of timedelta strings
-        td_strs = [str(sleep_durations[day]) for day in days]
+        td_strs = [
+            f"{int(sleep_record.duration.total_seconds() // 3600)}h {int((sleep_record.duration.total_seconds() % 3600) // 60)}m"
+            for sleep_record in sleep_records
+        ]
 
         bar = go.Bar(
             x=days,
             y=hours_slept,
             # attach the formatted timedeltas
             customdata=td_strs,
-            hovertemplate=
-                # you can show date & sleep:
-                "Slept: %{customdata}" +
-                "<extra></extra>",
+            # you can show date & sleep:
+            hovertemplate="%{customdata}" + "<extra></extra>",
             marker=dict(
                 color=self.colors["pop"],
                 line=dict(width=0),
@@ -173,14 +301,61 @@ class DashboardApp:
 
         fig = go.Figure(data=[bar])
         fig.update_layout(
-            xaxis=dict(title="Day", type="date"),
-            title="Sleep Durations",
-            hovermode="x",
+            xaxis=dict(type="date"),
         )
 
-        fig = self.format_fig(fig)
+        fig = self.format_fig(fig, show_date)
 
         return fig
+    
+    def plot_line_trend(self, sleep_records: list[SleepRecord], bedtime: bool, show_date: bool):
+        """
+        Create a line trend plot for wakeup or bedtime.
+        """
+        import plotly.graph_objects as go
+
+        if bedtime:
+            times = [rec.bedtime.time().strftime("%H:%M") for rec in sleep_records]
+            minutes = [
+                rec.bedtime.hour * 60 + rec.bedtime.minute for rec in sleep_records
+            ]
+        else:
+            times = [rec.wakeup.time().strftime("%H:%M") for rec in sleep_records]
+            minutes = [
+                rec.wakeup.hour * 60 + rec.wakeup.minute for rec in sleep_records
+            ]
+
+        days = [record.date for record in sleep_records]
+
+        fig = go.Figure()
+        fig.add_trace(
+            go.Scatter(
+                x=days,
+                y=minutes,
+                mode="lines+markers",
+                line=dict(color=self.colors["pop"]),
+                marker=dict(size=8),
+                text=times,
+                hovertemplate="%{x}<br>%{text}<extra></extra>",
+            )
+        )
+
+        # Set y-axis ticks to the times
+        if minutes:
+            min_minute = min(minutes)
+            max_minute = max(minutes)
+            # Choose a reasonable step (e.g., every 30 minutes)
+            step = 30
+            yticks = list(range((min_minute // step) * step, ((max_minute // step) + 1) * step + 1, step))
+            yticklabels = [f"{h:02}:{m:02}" for h, m in [(m // 60, m % 60) for m in yticks]]
+            fig.update_yaxes(
+                tickvals=yticks,
+                ticktext=yticklabels,
+            )
+
+        fig = self.format_fig(fig, show_date)
+        return fig
+
 
     def plot_example(self):
         """Create a sleep trend plot. Tracks time from latest interaction to wakeup."""
@@ -223,7 +398,7 @@ class DashboardApp:
 
         return fig
 
-    def format_fig(self, fig):
+    def format_fig(self, fig, show_date: bool = True):
         fig.update_layout(
             paper_bgcolor=self.colors["bg"],  # outer background
             plot_bgcolor=self.colors["bg"],  # inner plotting area
@@ -239,8 +414,9 @@ class DashboardApp:
                 gridwidth=1,
                 zeroline=True,
                 zerolinecolor=self.colors["mg"],  # <-- Color of x=0 line
-                zerolinewidth=2,                        # <-- Optional: thickness
-                title=dict(font=dict(size=22))
+                zerolinewidth=2,  # <-- Optional: thickness
+                title=dict(font=dict(size=22)),
+                tickformat="%a %d %b" if show_date else "%A",  # e.g. "Mon 01 Jan"
             ),
             yaxis=dict(
                 showgrid=True,
@@ -248,8 +424,11 @@ class DashboardApp:
                 gridwidth=1,
                 zeroline=True,
                 zerolinecolor=self.colors["mg"],  # <-- Color of x=0 line
-                zerolinewidth=2,                        # <-- Optional: thickness
-                title=dict(font=dict(size=22))
+                zerolinewidth=2,  # <-- Optional: thickness
+                title=dict(font=dict(size=22)),
             ),
+            margin=dict(l=0, r=00, t=0, b=0),
+            #height=200,
+            #width=400,
         )
         return fig

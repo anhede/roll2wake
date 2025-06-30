@@ -9,7 +9,7 @@
 } */
 
 /* Blue tans */
- /* :root {
+/* :root {
   --bg-color: #F5EFE7;
   --mg-color: #D8C4B6;
   --primary-color: #3E5879;
@@ -18,11 +18,11 @@
 
 /* Dark purple */
 :root {
-  --bg-color: #1A1A1D;
-  --mg-color: #3B1C32;
+  --bg-color: #1a1a1d;
+  --mg-color: #3b1c32;
   --primary-color: #b285a5;
   --pop-color: #e54695;
-  font-family: 'Fira Code', monospace;
+  font-family: "Fira Code", monospace;
 }
 
 /* Change bg of all */
@@ -39,10 +39,26 @@ body {
   margin: 0 auto; /* centers it horizontally */
 }
 
-/* Header */
+/* 1) Center everything in the header */
 .dashboard-header {
-  text-align: center;
-  margin-bottom: 80px;
+  display: flex;
+  flex-direction: column; /* stack title, subtitle, dropdown */
+  align-items: center; /* center them horizontally */
+  gap: 16px; /* nice space between title/subtitle/dropdown */
+}
+
+.row.column {
+  flex-direction: column; /* keep your vertical stacking */
+  align-items: center; /* center all children horizontally */
+  gap: 24px; /* space between section title & stats row */
+  margin-top: 40px; /* space above the first section */
+}
+
+.dashboard-subtitle {
+  margin-bottom: 0;
+}
+#preset-date-range {
+  width: 150px;
 }
 
 /* Header title */
@@ -53,12 +69,15 @@ body {
   margin: 0;
 }
 
-/* Row containers */
-.row {
-  display: flex;
+/* move the title flush left and give it some breathing room */
+.dashboard-section-title {
+  text-align: center;
   width: 100%;
-  margin-bottom: 0px;
-  align-items: center;
+  margin-bottom: 10px;
+}
+
+.dashboard-section {
+  margin-top: 100px;
 }
 
 /* First row with top margin */
@@ -67,15 +86,27 @@ body {
   margin-top: 40px;
 }
 
-/* Individual flex items */
+/* 1) Center everything in the row and give it a nice gap */
+.row {
+  display: flex;
+  justify-content: center; /* center all children horizontally */
+  align-items: center; /* center them vertically */
+  gap: 60px; /* uniform space between each flex child */
+}
+
+/* 2) Let your metric box size itself to its contents */
 .flex-item {
-  flex: 1;
+  flex: 0 1 auto; /* no grow, shrink if needed, size to content */
+  max-width: 200px; /* optional: cap the width so it never blows out */
   text-align: center;
 }
 
-/* Plot containers */
+/* 3) Use a fixed or max width on your plot, not a percent of the row */
 .flex-plot {
-  flex: 2;
+  flex: 0 1 auto; /* same: don’t grow, shrink if needed */
+  max-width: 600px; /* exactly how wide you want your plots */
+  width: 100%; /* fill that 400px */
+  height: 200px;
 }
 
 /* The big bold number */
@@ -93,12 +124,13 @@ body {
 }
 
 /* Dropdown */
-#preset-date-range, #preset-date-range * {
-    outline: none !important;
-    color: var(--primary-color) !important;
-    background-color: var(--mg-color) !important;
+#preset-date-range,
+#preset-date-range * {
+  outline: none !important;
+  color: var(--primary-color) !important;
+  background-color: var(--mg-color) !important;
 }
 #preset-date-range {
-    max-width: 300px; /* Limit the width of the dropdown */
-    margin: 0 auto; /* Center it */
+  max-width: 300px; /* Limit the width of the dropdown */
+  margin: 0 auto; /* Center it */
 }

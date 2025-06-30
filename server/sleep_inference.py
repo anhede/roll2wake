@@ -1,14 +1,21 @@
-from datetime import datetime, time, timedelta
+from datetime import datetime, time, timedelta, date
 from bisect import bisect_left
-from typing import List, Dict
-
-from datetime import datetime, time, timedelta
-from bisect import bisect_left
-from collections import namedtuple
 from typing import List
 
 # define a simple record to hold each night’s data
-SleepRecord = namedtuple("SleepRecord", ["date", "bedtime", "wakeup", "duration"])
+class SleepRecord:
+    def __init__(self, date: date, bedtime: datetime, wakeup: datetime, duration: timedelta):
+        self.date = date
+        self.bedtime: datetime = bedtime
+        self.wakeup: datetime = wakeup
+        self.duration: timedelta = duration
+
+    def __iter__(self):
+        return iter((self.date, self.bedtime, self.wakeup, self.duration))
+
+    def __repr__(self):
+        return (f"SleepRecord(date={self.date!r}, bedtime={self.bedtime!r}, "
+                f"wakeup={self.wakeup!r}, duration={self.duration!r})")
 
 def infer_sleep_periods(
     interactions: List[datetime],

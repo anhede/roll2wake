@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from random import randint
 from stats import Statistics, STAT_INTERACTION, STAT_WAKEUP
 
-monday = datetime(2025, 6, 23, 8, 0, 0)
+monday = datetime(2025, 6, 24, 8, 0, 0)
 
 SERVER_URL = "http://127.0.0.1:5000/stats"
 
