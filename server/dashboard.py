@@ -6,6 +6,7 @@ import re
 import datetime as dt
 from dash.dependencies import Input, Output
 from sleep_inference import infer_sleep_periods, SleepRecord
+SLEEP, BEDTIME, WAKEUP = range(3)
 
 
 class DashboardApp:
@@ -88,12 +89,12 @@ class DashboardApp:
                 show_date = False
             else:
                 show_date = True
-            sleep_fig = self.plot_sleep(sleep_records, show_date)
+            sleep_fig = self.plot_line_trend(sleep_records, SLEEP, show_date)
             bedtime_fig = self.plot_line_trend(
-                sleep_records, True, show_date
+                sleep_records, BEDTIME, show_date
             )
             wakeup_fig = self.plot_line_trend(
-                sleep_records, False, show_date
+                sleep_records, WAKEUP, show_date
             )
 
             return (
@@ -308,18 +309,27 @@ class DashboardApp:
 
         return fig
     
-    def plot_line_trend(self, sleep_records: list[SleepRecord], bedtime: bool, show_date: bool):
+    def plot_line_trend(self, sleep_records: list[SleepRecord], stat: int, show_date: bool):
         """
         Create a line trend plot for wakeup or bedtime.
         """
         import plotly.graph_objects as go
 
-        if bedtime:
+        if stat == SLEEP:
+            times = [
+                f"{rec.bedtime.time().strftime('%H:%M')} - {rec.wakeup.time().strftime('%H:%M')}"
+                for rec in sleep_records
+            ]
+            minutes = [
+                (rec.wakeup.hour * 60 + rec.wakeup.minute) - (rec.bedtime.hour * 60 + rec.bedtime.minute)
+                for rec in sleep_records
+            ]
+        elif stat == BEDTIME:
             times = [rec.bedtime.time().strftime("%H:%M") for rec in sleep_records]
             minutes = [
                 rec.bedtime.hour * 60 + rec.bedtime.minute for rec in sleep_records
             ]
-        else:
+        elif stat == WAKEUP:
             times = [rec.wakeup.time().strftime("%H:%M") for rec in sleep_records]
             minutes = [
                 rec.wakeup.hour * 60 + rec.wakeup.minute for rec in sleep_records
@@ -340,8 +350,14 @@ class DashboardApp:
             )
         )
 
-        # Set y-axis ticks to the times
-        if minutes:
+        if stat == SLEEP:
+            # Set y-axis to show sleep duration in hours
+            fig.update_yaxes(
+                tickvals=list(range(0, max(minutes) + 1, 30)),
+                ticktext=[f"{i // 60}h {i % 60}m" for i in range(0, max(minutes) + 1, 30)],
+            )
+        else:
+            # Set y-axis ticks to the times
             min_minute = min(minutes)
             max_minute = max(minutes)
             # Choose a reasonable step (e.g., every 30 minutes)
