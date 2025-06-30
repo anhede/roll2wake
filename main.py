@@ -5,7 +5,7 @@ from components.screen import Screen
 from components.pushbutton import PushButton
 from components.potentiometer import Potentiometer
 from components.neopixelcircle import NeopixelCircle
-from components.utils import time_string, smart_wrap
+from components.utils import time_string, smart_wrap, get_iso_timestamp
 from components.distsensor import Distsensor
 
 from client.client import Client
@@ -13,6 +13,7 @@ from client.wifi_client import WifiClient
 
 from routines.alarm import alarm
 from routines.interactive_story import interactive_story
+from server.stats import STAT_INTERACTION, STAT_WAKEUP, Statistics
 
 DEEP_SLEEP_MS = 5000
 SLEEP_MS = 3000
@@ -27,7 +28,7 @@ class AlarmState:
         self.__minute = minute
         self.__is_on = is_on
         self.__just_changed = True
-        self.__last_change_ms = time.ticks_ms()
+        self.__last_change_ms = -100000
         self.__last_fired_ms = time.ticks_ms() - 120 * 1000  # Set to 2 minutes ago to allow immediate firing
 
     def choice(self, choice: int | None = None):
@@ -82,6 +83,9 @@ class AlarmState:
     def just_changed(self, just_changed: bool | None = None):
         # Set
         if just_changed is not None:
+            time_since_last_change = time.ticks_diff(time.ticks_ms(), self.__last_change_ms)
+            if time_since_last_change > 1000 * 60:  # More than a minute since last change
+                publish_interaction()
             self.__just_changed = just_changed
             self.__last_change_ms = time.ticks_ms()
             return None
@@ -128,9 +132,10 @@ def main():
 
     # Initialize client
     screen.message("Connecting to WiFi...", center=True)
-    wifi_client = WifiClient()
+    _ = WifiClient()
     screen.message("Connecting to server...", center=True)
-    client = Client("http://192.168.1.234:5000")
+    global client
+    client = Client("http://192.168.1.144:5000")
     screen.message("Connections established", center=True)
     time.sleep(1)
 
@@ -188,6 +193,7 @@ def main():
                 screen.set_backlight(True)
                 deep_sleep = False
                 last_time_string = display_sleep_state(screen, state, last_time_string)
+                publish_interaction()
             else:
                 # Immediately start the interactive story if the button is held
                 sleep = False
@@ -217,6 +223,13 @@ def main():
             state.just_fired()
             alarm(screen, button, buzzer)
             try:
+                client.publish_statistics(
+                    Statistics(
+                        STAT_WAKEUP,
+                        0.0,
+                        get_iso_timestamp(),
+                    )
+                )
                 interactive_story(client, screen, pot, neopix, button)
             except Exception as e:
                 print(f"Error in interactive story: {e}")
@@ -226,6 +239,15 @@ def main():
 
         #print(f"Sleep: {sleep}, Deep Sleep: {deep_sleep}, Armed: {state.armed()}, Choice: {state.choice()}     ", end="\r")
         time.sleep_ms(50)
+
+def publish_interaction():
+    client.publish_statistics(
+                Statistics(
+                    STAT_INTERACTION,
+                    0.0,
+                    get_iso_timestamp(),
+                )
+            )
 
 def should_wake_up(state: AlarmState) -> bool:
     """
