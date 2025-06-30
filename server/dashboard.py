@@ -139,14 +139,6 @@ class DashboardApp:
         return colors
 
     def _build_layout(self):
-        # Placeholder metric values for row 1
-        today_values = [123, 45, 67]
-        # Placeholder averages for rows 2 & 3
-        avg_values = [50, 60]
-
-        fig1 = self.plot_example()
-        fig2 = self.plot_example()
-
         return html.Div(
             [
                 # Title header
@@ -180,7 +172,7 @@ class DashboardApp:
                 # Row 1
                 html.Div(
                     children=[
-                        html.H2("Today's stats", className="dashboard-section-title"),
+                        html.H2("Today's stats", id="today-stats-title", className="dashboard-section-title"),
                         html.Div(
                             children=[
                                 html.Div(
@@ -210,6 +202,7 @@ class DashboardApp:
                         html.H2("Sleep", className="dashboard-section-title"),
                         html.Div(
                             [
+                                html.Div([dcc.Graph(id="sleep-graph")], className="flex-plot"),
                                 html.Div(
                                     [
                                         html.H2("-", id='avg-sleep', className="metric-value"),
@@ -217,7 +210,6 @@ class DashboardApp:
                                     ],
                                     className="flex-item",
                                 ),
-                                html.Div([dcc.Graph(id="sleep-graph")], className="flex-plot"),
                             ],
                             className="row",
                         ),
@@ -231,6 +223,7 @@ class DashboardApp:
                         html.H2("Bedtime", className="dashboard-section-title"),
                         html.Div(
                             [
+                                html.Div([dcc.Graph(id='bedtime-graph')], className="flex-plot"),
                                 html.Div(
                                     [
                                         html.H2("-", id='avg-bedtime', className="metric-value"),
@@ -238,7 +231,6 @@ class DashboardApp:
                                     ],
                                     className="flex-item",
                                 ),
-                                html.Div([dcc.Graph(id='bedtime-graph')], className="flex-plot"),
                             ],
                             className="row",
                         ),
@@ -252,6 +244,7 @@ class DashboardApp:
                         html.H2("Wakeup", className="dashboard-section-title"),
                         html.Div(
                             [
+                                html.Div([dcc.Graph(id='wakeup-graph')], className="flex-plot"),
                                 html.Div(
                                     [
                                         html.H2("-", id='avg-wakeup', className="metric-value"),
@@ -259,7 +252,6 @@ class DashboardApp:
                                     ],
                                     className="flex-item",
                                 ),
-                                html.Div([dcc.Graph(id='wakeup-graph')], className="flex-plot"),
                             ],
                             className="row",
                         ),

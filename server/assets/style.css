@@ -17,11 +17,20 @@
 } */
 
 /* Dark purple */
-:root {
+/* :root {
   --bg-color: #1a1a1d;
   --mg-color: #3b1c32;
   --primary-color: #b285a5;
   --pop-color: #e54695;
+  font-family: "Fira Code", monospace;
+} */
+
+/* Grays */
+:root {
+  --bg-color: #272D2D;
+  --mg-color: #50514F;
+  --primary-color: #A39BA8;
+  --pop-color: #A39BA8;
   font-family: "Fira Code", monospace;
 }
 
@@ -71,9 +80,12 @@ body {
 
 /* move the title flush left and give it some breathing room */
 .dashboard-section-title {
-  text-align: center;
-  width: 100%;
+  text-align: left;
   margin-bottom: 10px;
+  margin-left: calc((100% - min(600px, 100%)) / 2);
+}
+#today-stats-title{
+  margin-left: 0;
 }
 
 .dashboard-section {
