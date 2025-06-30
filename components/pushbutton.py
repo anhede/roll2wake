@@ -9,7 +9,6 @@ class PushButton:
     """
 
     def __init__(self, pin: int, min_click_ms=100):
-        # choose pull based on active level
         self._pin = Pin(pin, Pin.IN, pull=Pin.PULL_UP)
         self._min_click_ms = min_click_ms
         self._last_click_time = time.ticks_ms() - min_click_ms  # allow immediate press

@@ -14,8 +14,8 @@ from client.wifi_client import WifiClient
 from routines.alarm import alarm
 from routines.interactive_story import interactive_story
 
-DEEP_SLEEP_MS = 10000
-SLEEP_MS = 5000
+DEEP_SLEEP_MS = 5000
+SLEEP_MS = 3000
 ALARM_STATE_CHANGE_FREEZE_MS = 2000  # Prevents the alarm from going off immediately after setting it
 QUICK_ALARM_TOGGLE_SCREEN_MS = 200  # Time to enable screen after quick alarm toggle
 
@@ -149,6 +149,7 @@ def main():
             sleep = False
             deep_sleep = False
             display_alarm_state(screen, state)
+            last_time_string = "" # Forget the last time string to force update
 
         if not sleep and state.ms_since_last_change() > SLEEP_MS:
             sleep = True
@@ -167,9 +168,11 @@ def main():
             screen.set_backlight(False)
 
         if distsensor.is_close() and deep_sleep:
-            last_dist_was_close_ms = time.ticks_ms()
-            screen.set_backlight(True)
-            deep_sleep = False
+            while distsensor.is_close():
+                last_dist_was_close_ms = time.ticks_ms()
+                screen.set_backlight(True)
+                deep_sleep = False
+                time.sleep_ms(50)
 
         if sleep and button.is_pressed():
             # If the button is pressed while in sleep mode, 
@@ -184,6 +187,7 @@ def main():
                 state.silent_is_on(not state.silent_is_on())
                 screen.set_backlight(True)
                 deep_sleep = False
+                last_time_string = display_sleep_state(screen, state, last_time_string)
             else:
                 # Immediately start the interactive story if the button is held
                 sleep = False
@@ -201,6 +205,8 @@ def main():
                         print(f"Error in interactive story: {e}")
                         screen.message("Error occurred", center=True)
                         time.sleep(2)
+                else:
+                    last_time_string = display_sleep_state(screen, state, last_time_string)
 
         # Check if it's time to wake up
         if should_wake_up(state):

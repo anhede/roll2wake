@@ -66,7 +66,7 @@ if __name__ == "__main__":
     sample_text = smart_wrap(
         "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque neque orci, tempor sit amet gravida sed, accumsan in lectus. Suspendisse potenti. Vestibulum ac tellus lobortis, elementum arcu vitae, aliquam nisl. Mauris et molestie neque, a bibendum lorem. Cras gravida orci non auctor finibus. Vivamus placerat, lacus sed suscipit cursus, dui odio efficitur neque, nec varius mauris elit nec enim. Aliquam erat volutpat. Integer vulputate eu massa a condimentum. Integer non justo eget ex placerat cursus hendrerit mattis magna.",
         row_len=screen.cols,
-        max_rows=50,
+        max_rows=100,
     )
 
     scroll_read(screen, pot, pushb, sample_text)

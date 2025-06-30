@@ -39,7 +39,7 @@ def interactive_story(
         formatted_text = smart_wrap(
             formatted_text,
             row_len=screen.cols,
-            max_rows=50,
+            max_rows=100,
         )
         scroll_read(screen, pot, button, formatted_text)
         if beat.is_ending:
