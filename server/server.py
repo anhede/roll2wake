@@ -13,7 +13,7 @@ app = Flask(__name__)
 # Get API keys from environment variables
 api_keys = get_api_keys()
 #llm = OpenAILLM(api_key=openai_api_key, model="gpt-4o-mini")
-llm = ClaudeLLM(api_key=api_keys.get("anthropic"), model="claude-3-5-sonnet-20240620")
+llm = ClaudeLLM(api_key=api_keys.get("anthropic"), model="claude-sonnet-4-20250514")
 storyteller = Storyteller(llm)
 
 # Initialize SQLite DB

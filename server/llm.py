@@ -25,7 +25,7 @@ class OpenAILLM(LLM):
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
-            response_format={"type": "json_object"},
+            #response_format={"type": "json_object"},
         )
         content = response.choices[0].message.content
         if content is None:
@@ -40,7 +40,7 @@ class ClaudeLLM(LLM):
     def __init__(
         self,
         api_key: str,
-        model: str = "claude-opus-4-20250514",
+        model: str = "claude-sonnet-4-20250514",
         max_tokens: int = 1500,
     ):
         self.client = anthropic.Anthropic(api_key=api_key)
@@ -71,7 +71,6 @@ class ClaudeLLM(LLM):
 
 if __name__ == "__main__":
     import os
-    from openai import OpenAI
 
     # Get API keys from environment variables
     openai_api_key = os.getenv("OPENAI_API_KEY")
