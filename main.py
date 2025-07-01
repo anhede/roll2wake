@@ -135,7 +135,7 @@ def main():
     _ = WifiClient()
     screen.message("Connecting to server...", center=True)
     global client
-    client = Client("http://192.168.1.144:5000")
+    client = Client("http://192.168.1.110:5000")
     screen.message("Connections established", center=True)
     time.sleep(1)
 

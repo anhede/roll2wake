@@ -54,8 +54,13 @@ def infer_sleep_periods(
         for dt in wakeups
     )
     records = []
-
+    seen_days = set()
     for w in wakeups:
+        day = w.date()
+        if day in seen_days:
+            continue
+        seen_days.add(day)
+
         idx = bisect_left(interactions, w)
         preceding = interactions[:idx]
         if not preceding:
