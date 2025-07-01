@@ -51,21 +51,24 @@ def main():
             continue
 
         # Roll dice and determine result
-        roll = roll_dice()
-        if selected.mode == MODE_ADVANTAGE:
-            roll = max(roll, roll_dice())
-        elif selected.mode == MODE_DISADVANTAGE:
-            roll = min(roll, roll_dice())
-        print(f"You rolled a {roll} ({selected.difficulty})...")
+        if selected.difficulty != 0:
+            roll = roll_dice()
+            if selected.mode == MODE_ADVANTAGE:
+                roll = max(roll, roll_dice())
+            elif selected.mode == MODE_DISADVANTAGE:
+                roll = min(roll, roll_dice())
+            print(f"You rolled a {roll} ({selected.difficulty})...")
 
-        if roll == 8:
-            result = "Critical Success."
-        elif roll == 1:
-            result = "Critical Failure."
-        elif roll >= selected.difficulty:
-            result = "Solid Success."
+            if roll == 8:
+                result = "Critical Success."
+            elif roll == 1:
+                result = "Critical Failure."
+            elif roll >= selected.difficulty:
+                result = "Solid Success."
+            else:
+                result = "Failure."
         else:
-            result = "Failure."
+            result = "Passive choice selected."
 
         # Update story
         beat = client.update_story(choice_id=choice_id, success_result=result)

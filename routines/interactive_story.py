@@ -49,9 +49,13 @@ def interactive_story(
             return
         prompts = []
         for choice in beat.choices:
-            prompts.append(
-                f"{choice.choice_id}: {choice.label} ({choice.difficulty}{MODES_SYMBOLS[choice.mode]})"
-            )
+            if choice.difficulty == 0:
+                # Passive choice, no roll needed
+                prompts.append(f"{choice.choice_id}: PASSIVE \n{choice.label}")
+            else:
+                prompts.append(
+                    f"{choice.choice_id}: {choice.label} ({choice.difficulty}{MODES_SYMBOLS[choice.mode]})"
+                )
         choice_id = (
             choice_menu(
                 prompts,
@@ -63,7 +67,10 @@ def interactive_story(
             + 1
         )  # +1 to match choice_id starting from 1
         choice = beat.choices[choice_id - 1]
-        success = dnd_roll(choice.difficulty, choice.mode, screen, button, neopix)
+        if choice.difficulty == 0:
+            success = "Passive choice selected."
+        else:
+            success = dnd_roll(choice.difficulty, choice.mode, screen, button, neopix)
         message_wait_story(screen)
         neopix.clear()
         beat = client.update_story(choice_id, success)

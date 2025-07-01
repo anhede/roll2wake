@@ -1,6 +1,7 @@
 from datetime import datetime, time, timedelta, date
 from bisect import bisect_left
 from typing import List
+from datetime import timezone
 
 # define a simple record to hold each night’s data
 class SleepRecord:
@@ -16,6 +17,12 @@ class SleepRecord:
     def __repr__(self):
         return (f"SleepRecord(date={self.date!r}, bedtime={self.bedtime!r}, "
                 f"wakeup={self.wakeup!r}, duration={self.duration!r})")
+    
+def ensure_aware(dt):
+    if dt.tzinfo is None:
+        # assume naive timestamps are UTC; adjust if you need another zone
+        return dt.replace(tzinfo=timezone(timedelta(hours=+2)))
+    return dt
 
 def infer_sleep_periods(
     interactions: List[datetime],
@@ -37,8 +44,15 @@ def infer_sleep_periods(
          d) duration = w - bedtime
       3) return a list of SleepRecords, sorted by date.
     """
-    interactions = sorted(interactions)
-    wakeups      = sorted(wakeups)
+
+    interactions = sorted(
+        (dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc))
+        for dt in interactions
+    )    
+    wakeups = sorted(
+        (ensure_aware(dt) if dt.tzinfo is None else dt)
+        for dt in wakeups
+    )
     records = []
 
     for w in wakeups:
