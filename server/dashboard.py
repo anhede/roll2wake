@@ -435,7 +435,7 @@ class DashboardApp:
                 zerolinewidth=2,  # <-- Optional: thickness
                 title=dict(font=dict(size=22)),
             ),
-            margin=dict(l=0, r=00, t=0, b=0),
+            margin=dict(l=0, r=00, t=40, b=40),
             #height=200,
             #width=400,
         )
