@@ -1,7 +1,7 @@
 anthropic==0.55.0
-dash==3.0.4
+dash==3.1.0
 Flask==3.0.3
 openai==1.93.0
 pandas==2.3.0
-plotly==6.1.2
+plotly==6.2.0
 ftfy==6.3.1
