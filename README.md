@@ -333,7 +333,7 @@ Now we're all done! To start the alarm, simply power it on with VS Code closed, 
 ## Final Results
 ### Alarm
 
-[Watch on YouTube](https://youtu.be/S2oP6IBFsXI)
+[Watch on YouTube](https://youtu.be/WYNIS5jIoKA)
 | Time  | Description                             |
 | ----- | --------------------------------------- |
 | 00:00 | Hand wave to show time                  |
