@@ -2,8 +2,15 @@
 ## :game_die: Tutorial on how to build a gamified DnD Alarm Clock
 
 **Waking up is not fun**
+
 **Alarms are not fun**
+
 **Let's fix that**
+
+---
+
+Follow the tutorial on HackMD instead for better formatting:
+https://hackmd.io/@Pbycv0m_SJO3SEFfDuQHyw/rJLhavbVge
 
 ---
 
